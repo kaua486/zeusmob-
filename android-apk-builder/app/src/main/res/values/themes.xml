@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ZeusMob" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/zeus_cyan</item>
+        <item name="colorPrimaryVariant">@color/zeus_cyan_dark</item>
+        <item name="colorOnPrimary">@color/zeus_black</item>
+        <item name="colorSecondary">@color/zeus_cyan</item>
+        <item name="colorOnSecondary">@color/zeus_black</item>
+        <item name="android:statusBarColor">@color/zeus_bg</item>
+        <item name="android:navigationBarColor">@color/zeus_bg</item>
+        <item name="android:windowBackground">@color/zeus_bg</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+</resources>

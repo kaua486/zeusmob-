@@ -1,0 +1,46 @@
+#!/usr/bin/env sh
+# Gradle wrapper script for Unix
+
+APP_NAME="Gradle"
+APP_BASE_NAME=`basename "$0"`
+DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
+CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+
+# Detect OS
+case "`uname`" in
+  Darwin*) os=darwin;;
+  MINGW*) os=windows;;
+  *) os=linux;;
+esac
+
+JAVA_EXE=java
+GRADLE_WRAPPER_JAR="gradle/wrapper/gradle-wrapper.jar"
+
+# Find JAVA_HOME or use system java
+if [ -z "$JAVA_HOME" ]; then
+  JAVA_CMD=`which java`
+  if [ -z "$JAVA_CMD" ]; then
+    echo "ERROR: JAVA_HOME não está definido e 'java' não foi encontrado no PATH."
+    echo "Instale o OpenJDK 17: https://adoptium.net/"
+    exit 1
+  fi
+else
+  JAVA_CMD="$JAVA_HOME/bin/java"
+fi
+
+# Download gradle-wrapper.jar if not present
+if [ ! -f "$GRADLE_WRAPPER_JAR" ]; then
+  echo "Baixando gradle-wrapper.jar..."
+  mkdir -p gradle/wrapper
+  curl -fsSL "https://raw.githubusercontent.com/gradle/gradle/v8.4.0/gradle/wrapper/gradle-wrapper.jar" \
+    -o "$GRADLE_WRAPPER_JAR" || {
+    echo "Falha ao baixar gradle-wrapper.jar"
+    exit 1
+  }
+fi
+
+exec "$JAVA_CMD" \
+  $DEFAULT_JVM_OPTS \
+  $JAVA_OPTS \
+  -classpath "$GRADLE_WRAPPER_JAR" \
+  org.gradle.wrapper.GradleWrapperMain "$@"

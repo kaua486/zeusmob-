@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="zeus_bg">#0A0D14</color>
+    <color name="zeus_card">#0F1624</color>
+    <color name="zeus_cyan">#00D4FF</color>
+    <color name="zeus_cyan_dark">#00B8D9</color>
+    <color name="zeus_green">#00FF9D</color>
+    <color name="zeus_black">#0A0D14</color>
+    <color name="zeus_white">#E0F0F5</color>
+</resources>

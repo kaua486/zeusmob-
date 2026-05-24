@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ZEUS MOB</string>
+    <string name="accessibility_service_label">Zeus Accessibility</string>
+    <string name="accessibility_service_description">Serviço de acessibilidade ZEUS MOB para automação e monitoramento.</string>
+</resources>
