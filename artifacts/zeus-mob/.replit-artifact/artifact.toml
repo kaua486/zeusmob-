@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "ZEUS MOB"
+version = "1.0.0"
+id = "artifacts/zeus-mob"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22889
+
+[services.development]
+run = "pnpm --filter @workspace/zeus-mob run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/zeus-mob", "run", "build" ]
+publicDir = "artifacts/zeus-mob/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22889"
+BASE_PATH = "/"

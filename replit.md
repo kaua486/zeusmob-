@@ -1,45 +1,39 @@
-# [Project name]
+# ZEUS MOB
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Painel de gerenciamento de múltiplos servidores com tema dark cyberpunk/neon — tela de login protegida e dashboard com cards de servidores, estatísticas em tempo real e sidebar de navegação.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/zeus-mob run dev` — run the frontend (reads PORT from env)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React + Vite + Tailwind CSS + shadcn/ui + wouter
+- Auth: client-side only (hardcoded admin credentials in zustand store)
+- Fonts: Rajdhani + Orbitron (Google Fonts)
+- Icons: lucide-react
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
-
-## Architecture decisions
-
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- `artifacts/zeus-mob/src/pages/login.tsx` — login screen
+- `artifacts/zeus-mob/src/pages/dashboard.tsx` — main dashboard
+- `artifacts/zeus-mob/src/lib/auth.ts` — zustand auth store (hardcoded credentials)
+- `artifacts/zeus-mob/src/index.css` — dark cyberpunk theme (neon cyan palette)
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+ZEUS MOB é um painel de gerenciamento de servidores inspirado na estética de impérios tecnológicos mitológicos. Acesso protegido por login, mostra servidores conectados com estatísticas de latência, sessão, bytes enviados/recebidos e mais.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Idioma: Português Brasileiro
+- Conta admin: gabrielaalmeida6781@gmail.com / @gabriela 124
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Auth é puramente client-side (localStorage). Não há backend de autenticação.
+- `zustand` deve estar instalado em `@workspace/zeus-mob` (não é uma dependência catalog padrão).
