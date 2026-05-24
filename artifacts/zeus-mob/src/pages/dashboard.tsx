@@ -112,9 +112,67 @@ export default function Dashboard() {
     setApkOpen(false); setDone(false); setGenerating(false);
     setStep(0); setForm({ ...EMPTY_FORM, appVersion: makeVersion(), appId: "" });
   }
-  function handleGenerate() {
-    setGenerating(true); setDone(false);
-    setTimeout(() => { setGenerating(false); setDone(true); }, 2400);
+  const [buildLog, setBuildLog] = useState("");
+  const [apkBlob, setApkBlob] = useState<{ url: string; name: string } | null>(null);
+
+  async function handleGenerate() {
+    setGenerating(true); setDone(false); setBuildLog(""); setApkBlob(null);
+
+    try {
+      setBuildLog("Preparando projeto Android...");
+
+      const payload = {
+        appName:     form.appName     || "ZeusMob",
+        clientName:  form.clientName,
+        appLink:     form.appLink,
+        notifTitle:  form.notifTitle,
+        notifMessage:form.notifMessage,
+        appVersion:  form.appVersion,
+        appId:       form.appId       || "com.zeusmob.app",
+        iconBase64:  form.iconPreview ?? undefined,
+        perms:       form.perms,
+        behavior:    form.behavior,
+        advanced:    form.advanced,
+      };
+
+      setBuildLog("Compilando APK com Gradle (1–3 min)...");
+
+      const resp = await fetch(`${import.meta.env.BASE_URL}api/apk/build`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(5 * 60 * 1000),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: resp.statusText }));
+        throw new Error(err.detail || err.error || "Build falhou");
+      }
+
+      const disposition = resp.headers.get("Content-Disposition") || "";
+      const nameMatch   = disposition.match(/filename="([^"]+)"/);
+      const apkName     = nameMatch ? nameMatch[1] : "zeusmob.apk";
+
+      const blob    = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      setApkBlob({ url: blobUrl, name: apkName });
+      setBuildLog(`APK gerado com sucesso! (${(blob.size / 1024 / 1024).toFixed(1)} MB)`);
+      setDone(true);
+    } catch (e: any) {
+      setBuildLog(`Erro: ${e.message}`);
+      setDone(false);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  function downloadApk() {
+    if (!apkBlob) return;
+    const a = document.createElement("a");
+    a.href = apkBlob.url;
+    a.download = apkBlob.name;
+    a.click();
   }
 
   const canNext = step < STEPS.length - 1;
@@ -386,17 +444,30 @@ export default function Dashboard() {
                   <p><span className="text-foreground/60">Comportamento:</span> <span className="text-primary">{BEHAVIORS.filter(b => form.behavior[b.key]).map(b => b.label).join(", ") || "padrão"}</span></p>
                 </div>
 
-                {/* Done state */}
-                {done && (
-                  <div className="mt-4 flex items-center gap-3 px-4 py-3 rounded-lg bg-[#00ff9d]/10 border border-[#00ff9d]/30">
-                    <span className="w-2 h-2 rounded-full bg-[#00ff9d] shadow-[0_0_6px_#00ff9d] shrink-0 animate-pulse" />
-                    <div className="flex-1">
-                      <p className="text-[11px] font-semibold text-[#00ff9d]">APK gerado com sucesso!</p>
-                      <p className="text-[9px] text-[#00ff9d]/70 mt-0.5">{form.appName} v{form.appVersion} · tamanho real Android</p>
+                {/* Build log / progress */}
+                {(generating || buildLog) && (
+                  <div className={`mt-4 flex items-start gap-3 px-4 py-3 rounded-lg border ${done ? "bg-[#00ff9d]/10 border-[#00ff9d]/30" : buildLog.startsWith("Erro") ? "bg-destructive/10 border-destructive/30" : "bg-primary/10 border-primary/30"}`}>
+                    {generating ? (
+                      <Loader2 className="w-3.5 h-3.5 text-primary animate-spin shrink-0 mt-0.5" />
+                    ) : done ? (
+                      <span className="w-2 h-2 rounded-full bg-[#00ff9d] shadow-[0_0_6px_#00ff9d] shrink-0 animate-pulse mt-1" />
+                    ) : (
+                      <span className="w-2 h-2 rounded-full bg-destructive shrink-0 mt-1" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[11px] font-semibold ${done ? "text-[#00ff9d]" : buildLog.startsWith("Erro") ? "text-destructive" : "text-primary"}`}>
+                        {buildLog || "Iniciando build…"}
+                      </p>
+                      {done && apkBlob && (
+                        <p className="text-[9px] text-[#00ff9d]/70 mt-0.5">{form.appName} · {apkBlob.name}</p>
+                      )}
                     </div>
-                    <button data-testid="button-download-apk" className="flex items-center gap-1 text-[10px] text-[#00ff9d] hover:underline shrink-0">
-                      <Download className="w-3 h-3" /> Baixar
-                    </button>
+                    {done && apkBlob && (
+                      <button onClick={downloadApk} data-testid="button-download-apk"
+                        className="flex items-center gap-1 text-[10px] text-[#00ff9d] hover:underline shrink-0">
+                        <Download className="w-3 h-3" /> Baixar
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
