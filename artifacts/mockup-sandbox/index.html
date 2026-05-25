@@ -23,45 +23,76 @@
     <link rel="stylesheet" media="print" onload="this.media='all'"
           href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght[...]
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300.[...]
-  </head>
-  <body style="height: 100%; margin: 0">
-    <div id="root" style="height: 100%"></div>
     
-    <!-- Virtual Cursor Implementation -->
-    <div id="virtual-cursor"></div>
-
+    <!-- Virtual Cursor Styles - Loaded in HEAD for immediate visibility -->
     <style>
       #virtual-cursor {
-        width: 18px;
-        height: 18px;
-        background: white;
-        border: 2px solid #dcdcdc;
-        border-radius: 50%;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        z-index: 999999;
-        pointer-events: none;
-        box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
-        transition: transform 0.02s linear;
+        width: 24px;
+        height: 24px;
+        background: #FFFFFF !important;
+        border: 2px solid #333333 !important;
+        border-radius: 50% !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        z-index: 999999999 !important;
+        pointer-events: none !important;
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.9), 0 0 20px rgba(255, 255, 255, 0.5) !important;
+        transition: transform 0.02s linear !important;
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        will-change: transform;
       }
     </style>
+  </head>
+  <body style="height: 100%; margin: 0">
+    <!-- Virtual Cursor Element - Added FIRST in body -->
+    <div id="virtual-cursor"></div>
+    
+    <div id="root" style="height: 100%"></div>
 
     <script type="module" src="/src/main.tsx"></script>
 
+    <!-- Virtual Cursor Implementation - Executes immediately -->
     <script>
-      // Virtual Cursor - Global Implementation
       (function initVirtualCursor() {
-        const cursor = document.getElementById("virtual-cursor");
+        console.log('[Virtual Cursor] Inicializando cursor virtual...');
         
-        let x = window.innerWidth / 2;
-        let y = window.innerHeight / 2;
-
-        function moveCursor(posX, posY) {
-          cursor.style.transform = `translate(${posX - 9}px, ${posY - 9}px)`;
+        // Garantir que o elemento existe
+        let cursor = document.getElementById("virtual-cursor");
+        if (!cursor) {
+          console.error('[Virtual Cursor] Elemento #virtual-cursor não encontrado!');
+          // Criar elemento como fallback
+          cursor = document.createElement('div');
+          cursor.id = 'virtual-cursor';
+          document.body.appendChild(cursor);
+          console.log('[Virtual Cursor] Elemento criado como fallback');
         }
 
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+        let isVisible = true;
+
+        function moveCursor(posX, posY) {
+          if (!cursor) return;
+          cursor.style.transform = `translate(${posX - 12}px, ${posY - 12}px)`;
+        }
+
+        // Forçar visibilidade inicial
+        cursor.style.display = 'block';
+        cursor.style.visibility = 'visible';
+        cursor.style.opacity = '1';
+        moveCursor(x, y);
+        console.log('[Virtual Cursor] Cursor inicializado em posição:', x, y);
+
         // Track touch movement (iPhone, Android)
+        document.addEventListener("touchstart", (e) => {
+          isVisible = true;
+          cursor.style.opacity = '1';
+          console.log('[Virtual Cursor] Touch iniciado');
+        }, false);
+
         document.addEventListener("touchmove", (e) => {
           const touch = e.touches[0];
           x = touch.clientX;
@@ -69,15 +100,37 @@
           moveCursor(x, y);
         }, { passive: true });
 
+        document.addEventListener("touchend", () => {
+          console.log('[Virtual Cursor] Touch finalizado');
+        }, false);
+
         // Track mouse movement (Desktop)
         document.addEventListener("mousemove", (e) => {
           x = e.clientX;
           y = e.clientY;
           moveCursor(x, y);
-        });
+        }, false);
 
-        // Initialize cursor position
-        moveCursor(x, y);
+        // Mostrar cursor ao entrar na janela
+        document.addEventListener("mouseenter", () => {
+          isVisible = true;
+          cursor.style.opacity = '1';
+        }, false);
+
+        // Esconder cursor ao sair da janela
+        document.addEventListener("mouseleave", () => {
+          isVisible = false;
+          cursor.style.opacity = '0.5';
+        }, false);
+
+        // Garantir visibilidade ao focar na janela
+        window.addEventListener("focus", () => {
+          isVisible = true;
+          cursor.style.opacity = '1';
+        }, false);
+
+        console.log('[Virtual Cursor] Cursor virtual ativado com sucesso!');
+        console.log('[Virtual Cursor] Eventos touchmove e mousemove registrados');
       })();
     </script>
   </body>
