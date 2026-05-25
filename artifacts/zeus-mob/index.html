@@ -19,6 +19,59 @@
   </head>
   <body>
     <div id="root"></div>
+    
+    <!-- Virtual Cursor Implementation -->
+    <div id="virtual-cursor"></div>
+
+    <style>
+      #virtual-cursor {
+        width: 18px;
+        height: 18px;
+        background: white;
+        border: 2px solid #dcdcdc;
+        border-radius: 50%;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        z-index: 999999;
+        pointer-events: none;
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.7);
+        transition: transform 0.02s linear;
+      }
+    </style>
+
     <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      // Virtual Cursor - Global Implementation
+      (function initVirtualCursor() {
+        const cursor = document.getElementById("virtual-cursor");
+        
+        let x = window.innerWidth / 2;
+        let y = window.innerHeight / 2;
+
+        function moveCursor(posX, posY) {
+          cursor.style.transform = `translate(${posX - 9}px, ${posY - 9}px)`;
+        }
+
+        // Track touch movement (iPhone, Android)
+        document.addEventListener("touchmove", (e) => {
+          const touch = e.touches[0];
+          x = touch.clientX;
+          y = touch.clientY;
+          moveCursor(x, y);
+        }, { passive: true });
+
+        // Track mouse movement (Desktop)
+        document.addEventListener("mousemove", (e) => {
+          x = e.clientX;
+          y = e.clientY;
+          moveCursor(x, y);
+        });
+
+        // Initialize cursor position
+        moveCursor(x, y);
+      })();
+    </script>
   </body>
 </html>
