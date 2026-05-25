@@ -1,15 +1,85 @@
 import { Router } from "express";
-import { execSync, exec } from "child_process";
+import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
 const router = Router();
 
-const ANDROID_HOME = "/home/runner/android-sdk";
-const JAVA_HOME = execSync("dirname $(dirname $(readlink -f $(which java)))", { encoding: "utf8" }).trim();
-const TEMPLATE_DIR = path.resolve(process.cwd(), "../../android-apk-builder");
-const KEYSTORE_PATH = path.join(os.homedir(), ".android/debug.keystore");
+// SDK lives inside workspace so it survives container restarts
+const WORKSPACE_ROOT = path.resolve(process.cwd(), "../..");
+const ANDROID_HOME   = path.join(WORKSPACE_ROOT, ".android-sdk");
+const ANDROID_SDK_ROOT = ANDROID_HOME;
+const KEYSTORE_PATH  = path.join(WORKSPACE_ROOT, ".android-sdk", "debug.keystore");
+const TEMPLATE_DIR   = path.join(WORKSPACE_ROOT, "android-apk-builder");
+
+const JAVA_HOME = execSync(
+  "dirname $(dirname $(readlink -f $(which java)))",
+  { encoding: "utf8" }
+).trim();
+
+const SDK_BIN      = path.join(ANDROID_HOME, "cmdline-tools", "latest", "bin");
+const BUILD_TOOLS  = path.join(ANDROID_HOME, "build-tools", "34.0.0");
+const PLATFORM_TOOLS = path.join(ANDROID_HOME, "platform-tools");
+const JAVA_BIN     = path.join(JAVA_HOME, "bin");
+
+function buildEnv() {
+  return {
+    ...process.env,
+    ANDROID_HOME,
+    ANDROID_SDK_ROOT,
+    JAVA_HOME,
+    HOME: os.homedir(),
+    PATH: [JAVA_BIN, SDK_BIN, BUILD_TOOLS, PLATFORM_TOOLS, process.env.PATH].join(":"),
+  };
+}
+
+/** Install Android SDK if not already present. Safe to call multiple times. */
+function ensureSdk(): void {
+  const sdkManagerBin = path.join(SDK_BIN, "sdkmanager");
+
+  // 1. Download cmdline-tools if missing
+  if (!fs.existsSync(sdkManagerBin)) {
+    fs.mkdirSync(path.join(ANDROID_HOME, "cmdline-tools"), { recursive: true });
+    const zip = "/tmp/cmdtools-zeus.zip";
+    execSync(
+      `wget -q "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" -O "${zip}"`,
+      { stdio: "pipe", timeout: 120_000 }
+    );
+    execSync(
+      `unzip -q "${zip}" -d "${path.join(ANDROID_HOME, "cmdline-tools")}" && ` +
+      `mv "${path.join(ANDROID_HOME, "cmdline-tools", "cmdline-tools")}" "${path.join(ANDROID_HOME, "cmdline-tools", "latest")}"`,
+      { stdio: "pipe" }
+    );
+    fs.rmSync(zip, { force: true });
+  }
+
+  // 2. Accept licenses + install SDK components if missing
+  const buildToolsDir = path.join(ANDROID_HOME, "build-tools", "34.0.0");
+  if (!fs.existsSync(buildToolsDir)) {
+    const env = buildEnv();
+    execSync(`yes | "${sdkManagerBin}" --licenses`, { stdio: "pipe", env, timeout: 60_000 });
+    execSync(
+      `"${sdkManagerBin}" "platforms;android-34" "build-tools;34.0.0" "platform-tools"`,
+      { stdio: "pipe", env, timeout: 180_000 }
+    );
+  }
+
+  // 3. Create debug keystore if missing
+  if (!fs.existsSync(KEYSTORE_PATH)) {
+    execSync(
+      `"${JAVA_BIN}/keytool" -genkeypair -v ` +
+      `-keystore "${KEYSTORE_PATH}" -alias androiddebugkey ` +
+      `-keyalg RSA -keysize 2048 -validity 10000 ` +
+      `-storepass android -keypass android ` +
+      `-dname "CN=Zeus Mob,O=Zeus,C=BR" -storetype PKCS12`,
+      { stdio: "pipe", timeout: 30_000 }
+    );
+  }
+}
+
+// Run once at startup
+ensureSdk();
 
 // All permissions the wizard can select
 const PERMISSION_MAP: Record<string, string[]> = {
@@ -332,21 +402,18 @@ router.post("/apk/build", async (req, res) => {
       }
     }
 
-    // 7. Run Gradle build using system gradle (Gradle 8.14.2 installed via Nix)
+    // 7. Ensure SDK is available (auto-installs if container was reset)
+    ensureSdk();
+
+    // 8. Run Gradle build using system gradle (Gradle 8.14.2 installed via Nix)
     const gradleBin = execSync("which gradle", { encoding: "utf8" }).trim();
     const gradleCmd = `${gradleBin} assembleRelease --no-daemon --quiet`;
-    req.log.info({ gradleCmd }, "Running Gradle build");
+    req.log.info({ gradleCmd, ANDROID_HOME, JAVA_HOME }, "Running Gradle build");
 
     execSync(gradleCmd, {
       cwd: buildDir,
       stdio: "pipe",
-      env: {
-        ...process.env,
-        ANDROID_HOME,
-        JAVA_HOME,
-        PATH: `${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/build-tools/34.0.0:${ANDROID_HOME}/platform-tools:${process.env.PATH}`,
-        HOME: os.homedir(),
-      },
+      env: buildEnv(),
       timeout: 5 * 60 * 1000, // 5 min
     });
 
