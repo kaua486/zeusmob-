@@ -1,20 +1,20 @@
 -- Merging decision tree log ---
 provider#androidx.core.content.FileProvider
-INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:134:9-142:20
+INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:135:9-143:20
 	android:grantUriPermissions
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:138:13-47
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:139:13-47
 	android:authorities
 		INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:136:13-60
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:137:13-60
 	android:exported
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:137:13-37
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:138:13-37
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:135:13-62
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:136:13-62
 manifest
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:2:1-145:12
-INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:2:1-145:12
-INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:2:1-145:12
-INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:2:1-145:12
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:2:1-146:12
+INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:2:1-146:12
+INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:2:1-146:12
+INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:2:1-146:12
 MERGED from [com.google.android.material:material:1.11.0] /home/runner/.gradle/caches/transforms-3/375d77e3bac5523f6a4d9c17a7b2806c/transformed/material-1.11.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /home/runner/.gradle/caches/transforms-3/4986230a3613e9c8878387b9e002f926/transformed/constraintlayout-2.1.4/AndroidManifest.xml:2:1-11:12
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] /home/runner/.gradle/caches/transforms-3/273aad534e3fc4832a3bc3590781669e/transformed/jetified-appcompat-resources-1.6.1/AndroidManifest.xml:17:1-22:12
@@ -167,8 +167,8 @@ ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManife
 	android:name
 		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:49:22-82
 application
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:52:5-144:19
-INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:52:5-144:19
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:52:5-145:19
+INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:52:5-145:19
 MERGED from [com.google.android.material:material:1.11.0] /home/runner/.gradle/caches/transforms-3/375d77e3bac5523f6a4d9c17a7b2806c/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.11.0] /home/runner/.gradle/caches/transforms-3/375d77e3bac5523f6a4d9c17a7b2806c/transformed/material-1.11.0/AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] /home/runner/.gradle/caches/transforms-3/4986230a3613e9c8878387b9e002f926/transformed/constraintlayout-2.1.4/AndroidManifest.xml:9:5-20
@@ -204,131 +204,133 @@ MERGED from [androidx.startup:startup-runtime:1.1.1] /home/runner/.gradle/caches
 	android:fullBackupContent
 		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:56:9-42
 	tools:targetApi
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:64:9-29
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:65:9-29
 	android:allowBackup
 		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:54:9-36
 	android:theme
 		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:61:9-45
 	android:dataExtractionRules
 		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:55:9-65
+	android:usesCleartextTraffic
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:64:9-44
 	android:name
 		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:53:9-35
 activity#com.zeusmob.app.MainActivity
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:67:9-77:20
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:68:9-78:20
 	android:screenOrientation
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:71:13-49
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:72:13-49
 	android:launchMode
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:70:13-43
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:71:13-43
 	android:exported
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:69:13-36
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:70:13-36
 	android:configChanges
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:72:13-74
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:73:13-74
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:68:13-41
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:69:13-41
 intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:73:13-76:29
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:74:13-77:29
 action#android.intent.action.MAIN
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:74:17-69
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:75:17-69
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:74:25-66
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:75:25-66
 category#android.intent.category.LAUNCHER
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:75:17-77
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:76:17-77
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:75:27-74
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:76:27-74
 service#com.zeusmob.app.service.ZeusAccessibilityService
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:80:9-91:19
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:81:9-92:19
 	android:label
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:84:13-64
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:85:13-64
 	android:exported
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:82:13-36
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:83:13-36
 	android:permission
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:83:13-79
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:84:13-79
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:81:13-61
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:82:13-61
 intent-filter#action:name:android.accessibilityservice.AccessibilityService
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:85:13-87:29
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:86:13-88:29
 action#android.accessibilityservice.AccessibilityService
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:86:17-92
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:87:17-92
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:86:25-89
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:87:25-89
 meta-data#android.accessibilityservice
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:88:13-90:72
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:89:13-91:72
 	android:resource
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:90:17-69
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:91:17-69
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:89:17-60
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:90:17-60
 service#com.zeusmob.app.service.ZeusForegroundService
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:94:9-97:58
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:95:9-98:58
 	android:exported
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:96:13-37
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:97:13-37
 	android:foregroundServiceType
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:97:13-55
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:98:13-55
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:95:13-58
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:96:13-58
 receiver#com.zeusmob.app.receiver.BootReceiver
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:100:9-107:20
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:101:9-108:20
 	android:exported
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:102:13-36
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:103:13-36
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:101:13-50
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:102:13-50
 intent-filter#action:name:android.intent.action.BOOT_COMPLETED+action:name:android.intent.action.QUICKBOOT_POWERON
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:103:13-106:29
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:104:13-107:29
 	android:priority
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:103:28-50
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:104:28-50
 action#android.intent.action.BOOT_COMPLETED
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:104:17-79
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:105:17-79
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:104:25-76
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:105:25-76
 action#android.intent.action.QUICKBOOT_POWERON
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:105:17-82
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:106:17-82
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:105:25-79
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:106:25-79
 receiver#com.zeusmob.app.receiver.ScreenLockReceiver
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:110:9-118:20
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:111:9-119:20
 	android:exported
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:112:13-36
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:113:13-36
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:111:13-56
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:112:13-56
 intent-filter#action:name:android.intent.action.SCREEN_OFF+action:name:android.intent.action.SCREEN_ON+action:name:android.intent.action.USER_PRESENT
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:113:13-117:29
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:114:13-118:29
 action#android.intent.action.SCREEN_OFF
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:114:17-75
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:115:17-75
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:114:25-72
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:115:25-72
 action#android.intent.action.SCREEN_ON
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:115:17-74
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:116:17-74
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:115:25-71
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:116:25-71
 action#android.intent.action.USER_PRESENT
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:116:17-77
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:117:17-77
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:116:25-74
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:117:25-74
 receiver#com.zeusmob.app.receiver.ZeusDeviceAdminReceiver
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:121:9-131:20
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:122:9-132:20
 	android:exported
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:123:13-36
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:124:13-36
 	android:permission
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:124:13-70
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:125:13-70
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:122:13-61
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:123:13-61
 meta-data#android.app.device_admin
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:125:13-127:63
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:126:13-128:63
 	android:resource
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:127:17-60
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:128:17-60
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:126:17-56
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:127:17-56
 intent-filter#action:name:android.app.action.DEVICE_ADMIN_ENABLED
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:128:13-130:29
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:129:13-131:29
 action#android.app.action.DEVICE_ADMIN_ENABLED
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:129:17-82
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:130:17-82
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:129:25-79
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:130:25-79
 meta-data#android.support.FILE_PROVIDER_PATHS
-ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:139:13-141:54
+ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:140:13-142:54
 	android:resource
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:141:17-51
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:142:17-51
 	android:name
-		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:140:17-67
+		ADDED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:141:17-67
 uses-sdk
 INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml

@@ -75,7 +75,8 @@
         android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.ZeusMob" >
+        android:theme="@style/Theme.ZeusMob"
+        android:usesCleartextTraffic="true" >
 
         <!-- ── MainActivity ── -->
         <activity

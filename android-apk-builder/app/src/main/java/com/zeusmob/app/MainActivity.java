@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
         ws.setUseWideViewPort(true);
         ws.setCacheMode(WebSettings.LOAD_DEFAULT);
         ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        ws.setDatabaseEnabled(true);
         ws.setUserAgentString(ws.getUserAgentString() + " ZeusMobApp/1.0");
 
         webView.setWebChromeClient(new WebChromeClient());

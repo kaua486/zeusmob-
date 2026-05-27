@@ -61,6 +61,7 @@
         android:theme="@style/Theme.ZeusMob"
         android:hardwareAccelerated="true"
         android:largeHeap="true"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
         <!-- ── MainActivity ── -->
