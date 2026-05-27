@@ -235,6 +235,7 @@ export default function Dashboard() {
 
   async function handleGenerate() {
     setGenerating(true); setDone(false); setBuildLog(""); setApkBlob(null);
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
     try {
       setBuildLog("Preparando projeto Android...");
       const payload = {
@@ -250,28 +251,67 @@ export default function Dashboard() {
         behavior:     form.behavior,
         advanced:     form.advanced,
       };
-      setBuildLog("Compilando APK com Gradle (1–3 min)...");
-      const resp = await fetch(`${import.meta.env.BASE_URL}api/apk/build`, {
+
+      // 1. Inicia o build — retorna jobId imediatamente
+      setBuildLog("Iniciando compilação em segundo plano...");
+      const startResp = await fetch(`${import.meta.env.BASE_URL}api/apk/build`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(5 * 60 * 1000),
       });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: resp.statusText }));
-        throw new Error((err as any).detail || (err as any).error || "Build falhou");
+      if (!startResp.ok) {
+        const err = await startResp.json().catch(() => ({ error: startResp.statusText }));
+        throw new Error((err as any).error || "Falha ao iniciar build");
       }
-      const disposition = resp.headers.get("Content-Disposition") || "";
-      const nameMatch   = disposition.match(/filename="([^"]+)"/);
-      const apkName     = nameMatch ? nameMatch[1] : "zeusmob.apk";
-      const blob     = await resp.blob();
-      const blobUrl  = URL.createObjectURL(blob);
-      setApkBlob({ url: blobUrl, name: apkName });
-      setBuildLog(`APK gerado! (${(blob.size / 1024 / 1024).toFixed(1)} MB)`);
-      setDone(true);
+      const { jobId } = await startResp.json();
+
+      // 2. Polling a cada 3s até concluir ou falhar
+      await new Promise<void>((resolve, reject) => {
+        pollInterval = setInterval(async () => {
+          try {
+            const statusResp = await fetch(
+              `${import.meta.env.BASE_URL}api/apk/status/${jobId}`
+            );
+            if (!statusResp.ok) return; // rede instável — tenta novamente
+            const data = await statusResp.json();
+
+            if (data.log) setBuildLog(data.log);
+
+            if (data.status === "done") {
+              clearInterval(pollInterval!);
+              pollInterval = null;
+
+              // 3. Faz download do APK
+              const dlResp = await fetch(
+                `${import.meta.env.BASE_URL}api/apk/download/${jobId}`
+              );
+              if (!dlResp.ok) { reject(new Error("Falha ao baixar APK")); return; }
+
+              const blob    = await dlResp.blob();
+              const blobUrl = URL.createObjectURL(blob);
+              setApkBlob({ url: blobUrl, name: data.apkName || "zeusmob.apk" });
+              setBuildLog(`✅ APK gerado! (${(blob.size / 1024 / 1024).toFixed(1)} MB)`);
+              setDone(true);
+              resolve();
+
+            } else if (data.status === "error") {
+              clearInterval(pollInterval!);
+              pollInterval = null;
+              const lastLine = data.log?.split("\n").filter(Boolean).pop() || "Build falhou";
+              reject(new Error(lastLine));
+            }
+          } catch (e) {
+            clearInterval(pollInterval!);
+            pollInterval = null;
+            reject(e);
+          }
+        }, 3000);
+      });
+
     } catch (e: any) {
       setBuildLog(`Erro: ${e.message}`);
     } finally {
+      if (pollInterval) clearInterval(pollInterval);
       setGenerating(false);
     }
   }

