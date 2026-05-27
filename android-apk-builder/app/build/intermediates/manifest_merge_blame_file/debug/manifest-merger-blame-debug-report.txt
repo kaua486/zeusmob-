@@ -87,271 +87,274 @@
 49    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 49-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:40:5-89
 49-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:40:22-86
-50
-51    <!-- Prevenir Exclusão / Device Admin -->
-52    <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
-52-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:43:5-44:47
-52-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:43:22-73
-53    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
-53-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:45:5-46:47
-53-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:45:22-79
-54
-55    <!-- Acessibilidade -->
-56    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
-56-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:49:5-50:47
-56-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:49:22-82
-57
-58    <permission
-58-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
-59        android:name="com.zeusmob.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-59-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
-60        android:protectionLevel="signature" />
-60-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
-61
-62    <uses-permission android:name="com.zeusmob.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-62-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
-62-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
-63
-64    <application
-64-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:52:5-146:19
-65        android:name="com.zeusmob.app.ZeusMobApp"
-65-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:53:9-35
-66        android:allowBackup="false"
-66-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:54:9-36
-67        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
-67-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
-68        android:dataExtractionRules="@xml/data_extraction_rules"
-68-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:55:9-65
-69        android:debuggable="true"
-70        android:extractNativeLibs="false"
-71        android:fullBackupContent="false"
-71-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:56:9-42
-72        android:hardwareAccelerated="true"
-72-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:62:9-43
-73        android:icon="@mipmap/ic_launcher"
-73-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:57:9-43
-74        android:label="@string/app_name"
-74-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:58:9-41
-75        android:largeHeap="true"
-75-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:63:9-33
-76        android:networkSecurityConfig="@xml/network_security_config"
-76-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:65:9-69
-77        android:roundIcon="@mipmap/ic_launcher_round"
-77-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:59:9-54
-78        android:supportsRtl="true"
-78-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:60:9-35
-79        android:theme="@style/Theme.ZeusMob"
-79-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:61:9-45
-80        android:usesCleartextTraffic="true" >
-80-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:64:9-44
-81
-82        <!-- ── MainActivity ── -->
-83        <activity
-83-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:69:9-79:20
-84            android:name="com.zeusmob.app.MainActivity"
-84-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:70:13-41
-85            android:configChanges="orientation|keyboardHidden|screenSize"
-85-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:74:13-74
-86            android:exported="true"
-86-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:71:13-36
-87            android:launchMode="singleTop"
-87-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:72:13-43
-88            android:screenOrientation="portrait" >
-88-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:73:13-49
-89            <intent-filter>
-89-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:75:13-78:29
-90                <action android:name="android.intent.action.MAIN" />
-90-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:76:17-69
-90-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:76:25-66
-91
-92                <category android:name="android.intent.category.LAUNCHER" />
-92-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:77:17-77
-92-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:77:27-74
-93            </intent-filter>
-94        </activity>
-95
-96        <!-- ── Accessibility Service ── -->
-97        <service
-97-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:82:9-93:19
-98            android:name="com.zeusmob.app.service.ZeusAccessibilityService"
-98-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:83:13-61
-99            android:exported="true"
-99-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:84:13-36
-100            android:label="@string/accessibility_service_label"
-100-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:86:13-64
-101            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
-101-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:85:13-79
-102            <intent-filter>
-102-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:87:13-89:29
-103                <action android:name="android.accessibilityservice.AccessibilityService" />
-103-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:88:17-92
-103-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:88:25-89
-104            </intent-filter>
-105
-106            <meta-data
-106-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:90:13-92:72
-107                android:name="android.accessibilityservice"
-107-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:91:17-60
-108                android:resource="@xml/accessibility_service_config" />
-108-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:92:17-69
-109        </service>
-110
-111        <!-- ── Foreground Service (Prevenir Paradas) ── -->
-112        <service
-112-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:96:9-99:58
-113            android:name="com.zeusmob.app.service.ZeusForegroundService"
-113-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:97:13-58
-114            android:exported="false"
-114-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:98:13-37
-115            android:foregroundServiceType="specialUse" />
-115-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:99:13-55
-116
-117        <!-- ── Boot Receiver (iniciar com o sistema) ── -->
-118        <receiver
-118-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:102:9-109:20
-119            android:name="com.zeusmob.app.receiver.BootReceiver"
-119-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:103:13-50
-120            android:exported="true" >
-120-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:104:13-36
-121            <intent-filter android:priority="999" >
-121-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:105:13-108:29
-121-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:105:28-50
-122                <action android:name="android.intent.action.BOOT_COMPLETED" />
-122-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:106:17-79
-122-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:106:25-76
-123                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-123-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:107:17-82
-123-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:107:25-79
-124            </intent-filter>
-125        </receiver>
-126
-127        <!-- ── Screen Lock Receiver ── -->
-128        <receiver
-128-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:112:9-120:20
-129            android:name="com.zeusmob.app.receiver.ScreenLockReceiver"
-129-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:113:13-56
-130            android:exported="true" >
-130-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:114:13-36
-131            <intent-filter>
-131-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:115:13-119:29
-132                <action android:name="android.intent.action.SCREEN_OFF" />
-132-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:116:17-75
-132-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:116:25-72
-133                <action android:name="android.intent.action.SCREEN_ON" />
-133-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:117:17-74
-133-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:117:25-71
-134                <action android:name="android.intent.action.USER_PRESENT" />
-134-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:118:17-77
-134-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:118:25-74
-135            </intent-filter>
-136        </receiver>
-137
-138        <!-- ── Device Admin (Prevenir Exclusão) ── -->
-139        <receiver
-139-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:123:9-133:20
-140            android:name="com.zeusmob.app.receiver.ZeusDeviceAdminReceiver"
-140-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:124:13-61
-141            android:exported="true"
-141-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:125:13-36
-142            android:permission="android.permission.BIND_DEVICE_ADMIN" >
-142-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:126:13-70
-143            <meta-data
-143-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:127:13-129:63
-144                android:name="android.app.device_admin"
-144-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:128:17-56
-145                android:resource="@xml/device_admin_config" />
-145-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:129:17-60
-146
-147            <intent-filter>
-147-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:130:13-132:29
-148                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
-148-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:131:17-82
-148-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:131:25-79
-149            </intent-filter>
-150        </receiver>
-151
-152        <!-- ── Notification Channel Provider ── -->
-153        <provider
-154            android:name="androidx.core.content.FileProvider"
-154-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:137:13-62
-155            android:authorities="com.zeusmob.app.provider"
-155-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:138:13-60
-156            android:exported="false"
-156-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:139:13-37
-157            android:grantUriPermissions="true" >
-157-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:140:13-47
-158            <meta-data
-158-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:141:13-143:54
-159                android:name="android.support.FILE_PROVIDER_PATHS"
-159-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:142:17-67
-160                android:resource="@xml/file_paths" />
-160-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:143:17-51
-161        </provider>
-162        <provider
-162-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
-163            android:name="androidx.startup.InitializationProvider"
-163-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:25:13-67
-164            android:authorities="com.zeusmob.app.androidx-startup"
-164-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:26:13-68
-165            android:exported="false" >
-165-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:27:13-37
-166            <meta-data
-166-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
-167                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-167-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
-168                android:value="androidx.startup" />
-168-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
-169            <meta-data
-169-->[androidx.lifecycle:lifecycle-process:2.6.1] /home/runner/.gradle/caches/transforms-3/54d0af492c7aef2bb735c053b834b579/transformed/jetified-lifecycle-process-2.6.1/AndroidManifest.xml:29:13-31:52
-170                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-170-->[androidx.lifecycle:lifecycle-process:2.6.1] /home/runner/.gradle/caches/transforms-3/54d0af492c7aef2bb735c053b834b579/transformed/jetified-lifecycle-process-2.6.1/AndroidManifest.xml:30:17-78
-171                android:value="androidx.startup" />
-171-->[androidx.lifecycle:lifecycle-process:2.6.1] /home/runner/.gradle/caches/transforms-3/54d0af492c7aef2bb735c053b834b579/transformed/jetified-lifecycle-process-2.6.1/AndroidManifest.xml:31:17-49
-172            <meta-data
-172-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
-173                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-173-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
-174                android:value="androidx.startup" />
-174-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
-175        </provider>
-176
-177        <receiver
-177-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
-178            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-178-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
-179            android:directBootAware="false"
-179-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
-180            android:enabled="true"
-180-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
-181            android:exported="true"
-181-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
-182            android:permission="android.permission.DUMP" >
-182-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
-183            <intent-filter>
-183-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
-184                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-184-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
-184-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
-185            </intent-filter>
-186            <intent-filter>
-186-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
-187                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-187-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
-187-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
-188            </intent-filter>
-189            <intent-filter>
-189-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
-190                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-190-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
-190-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
-191            </intent-filter>
-192            <intent-filter>
-192-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
-193                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-193-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
-193-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
-194            </intent-filter>
-195        </receiver>
-196    </application>
-197
-198</manifest>
+50    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+50-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:41:5-87
+50-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:41:22-84
+51
+52    <!-- Prevenir Exclusão / Device Admin -->
+53    <uses-permission android:name="android.permission.BIND_DEVICE_ADMIN" />
+53-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:44:5-45:47
+53-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:44:22-73
+54    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+54-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:46:5-47:47
+54-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:46:22-79
+55
+56    <!-- Acessibilidade -->
+57    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+57-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:50:5-51:47
+57-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:50:22-82
+58
+59    <permission
+59-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:22:5-24:47
+60        android:name="com.zeusmob.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+60-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:23:9-81
+61        android:protectionLevel="signature" />
+61-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:24:9-44
+62
+63    <uses-permission android:name="com.zeusmob.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+63-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:26:5-97
+63-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:26:22-94
+64
+65    <application
+65-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:53:5-147:19
+66        android:name="com.zeusmob.app.ZeusMobApp"
+66-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:54:9-35
+67        android:allowBackup="false"
+67-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:55:9-36
+68        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+68-->[androidx.core:core:1.12.0] /home/runner/.gradle/caches/transforms-3/606cc34df7cdbd73aa5e87d0916f75fd/transformed/core-1.12.0/AndroidManifest.xml:28:18-86
+69        android:dataExtractionRules="@xml/data_extraction_rules"
+69-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:56:9-65
+70        android:debuggable="true"
+71        android:extractNativeLibs="false"
+72        android:fullBackupContent="false"
+72-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:57:9-42
+73        android:hardwareAccelerated="true"
+73-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:63:9-43
+74        android:icon="@mipmap/ic_launcher"
+74-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:58:9-43
+75        android:label="@string/app_name"
+75-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:59:9-41
+76        android:largeHeap="true"
+76-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:64:9-33
+77        android:networkSecurityConfig="@xml/network_security_config"
+77-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:66:9-69
+78        android:roundIcon="@mipmap/ic_launcher_round"
+78-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:60:9-54
+79        android:supportsRtl="true"
+79-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:61:9-35
+80        android:theme="@style/Theme.ZeusMob"
+80-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:62:9-45
+81        android:usesCleartextTraffic="true" >
+81-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:65:9-44
+82
+83        <!-- ── MainActivity ── -->
+84        <activity
+84-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:70:9-80:20
+85            android:name="com.zeusmob.app.MainActivity"
+85-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:71:13-41
+86            android:configChanges="orientation|keyboardHidden|screenSize"
+86-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:75:13-74
+87            android:exported="true"
+87-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:72:13-36
+88            android:launchMode="singleTop"
+88-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:73:13-43
+89            android:screenOrientation="portrait" >
+89-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:74:13-49
+90            <intent-filter>
+90-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:76:13-79:29
+91                <action android:name="android.intent.action.MAIN" />
+91-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:77:17-69
+91-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:77:25-66
+92
+93                <category android:name="android.intent.category.LAUNCHER" />
+93-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:78:17-77
+93-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:78:27-74
+94            </intent-filter>
+95        </activity>
+96
+97        <!-- ── Accessibility Service ── -->
+98        <service
+98-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:83:9-94:19
+99            android:name="com.zeusmob.app.service.ZeusAccessibilityService"
+99-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:84:13-61
+100            android:exported="true"
+100-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:85:13-36
+101            android:label="@string/accessibility_service_label"
+101-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:87:13-64
+102            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+102-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:86:13-79
+103            <intent-filter>
+103-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:88:13-90:29
+104                <action android:name="android.accessibilityservice.AccessibilityService" />
+104-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:89:17-92
+104-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:89:25-89
+105            </intent-filter>
+106
+107            <meta-data
+107-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:91:13-93:72
+108                android:name="android.accessibilityservice"
+108-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:92:17-60
+109                android:resource="@xml/accessibility_service_config" />
+109-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:93:17-69
+110        </service>
+111
+112        <!-- ── Foreground Service (Prevenir Paradas) ── -->
+113        <service
+113-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:97:9-100:58
+114            android:name="com.zeusmob.app.service.ZeusForegroundService"
+114-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:98:13-58
+115            android:exported="false"
+115-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:99:13-37
+116            android:foregroundServiceType="specialUse" />
+116-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:100:13-55
+117
+118        <!-- ── Boot Receiver (iniciar com o sistema) ── -->
+119        <receiver
+119-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:103:9-110:20
+120            android:name="com.zeusmob.app.receiver.BootReceiver"
+120-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:104:13-50
+121            android:exported="true" >
+121-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:105:13-36
+122            <intent-filter android:priority="999" >
+122-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:106:13-109:29
+122-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:106:28-50
+123                <action android:name="android.intent.action.BOOT_COMPLETED" />
+123-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:107:17-79
+123-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:107:25-76
+124                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+124-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:108:17-82
+124-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:108:25-79
+125            </intent-filter>
+126        </receiver>
+127
+128        <!-- ── Screen Lock Receiver ── -->
+129        <receiver
+129-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:113:9-121:20
+130            android:name="com.zeusmob.app.receiver.ScreenLockReceiver"
+130-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:114:13-56
+131            android:exported="true" >
+131-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:115:13-36
+132            <intent-filter>
+132-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:116:13-120:29
+133                <action android:name="android.intent.action.SCREEN_OFF" />
+133-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:117:17-75
+133-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:117:25-72
+134                <action android:name="android.intent.action.SCREEN_ON" />
+134-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:118:17-74
+134-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:118:25-71
+135                <action android:name="android.intent.action.USER_PRESENT" />
+135-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:119:17-77
+135-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:119:25-74
+136            </intent-filter>
+137        </receiver>
+138
+139        <!-- ── Device Admin (Prevenir Exclusão) ── -->
+140        <receiver
+140-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:124:9-134:20
+141            android:name="com.zeusmob.app.receiver.ZeusDeviceAdminReceiver"
+141-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:125:13-61
+142            android:exported="true"
+142-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:126:13-36
+143            android:permission="android.permission.BIND_DEVICE_ADMIN" >
+143-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:127:13-70
+144            <meta-data
+144-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:128:13-130:63
+145                android:name="android.app.device_admin"
+145-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:129:17-56
+146                android:resource="@xml/device_admin_config" />
+146-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:130:17-60
+147
+148            <intent-filter>
+148-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:131:13-133:29
+149                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+149-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:132:17-82
+149-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:132:25-79
+150            </intent-filter>
+151        </receiver>
+152
+153        <!-- ── Notification Channel Provider ── -->
+154        <provider
+155            android:name="androidx.core.content.FileProvider"
+155-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:138:13-62
+156            android:authorities="com.zeusmob.app.provider"
+156-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:139:13-60
+157            android:exported="false"
+157-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:140:13-37
+158            android:grantUriPermissions="true" >
+158-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:141:13-47
+159            <meta-data
+159-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:142:13-144:54
+160                android:name="android.support.FILE_PROVIDER_PATHS"
+160-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:143:17-67
+161                android:resource="@xml/file_paths" />
+161-->/home/runner/workspace/android-apk-builder/app/src/main/AndroidManifest.xml:144:17-51
+162        </provider>
+163        <provider
+163-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:24:9-32:20
+164            android:name="androidx.startup.InitializationProvider"
+164-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:25:13-67
+165            android:authorities="com.zeusmob.app.androidx-startup"
+165-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:26:13-68
+166            android:exported="false" >
+166-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:27:13-37
+167            <meta-data
+167-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:29:13-31:52
+168                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+168-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:30:17-75
+169                android:value="androidx.startup" />
+169-->[androidx.emoji2:emoji2:1.2.0] /home/runner/.gradle/caches/transforms-3/cd0e31776a03b70e2d22563fb2144838/transformed/jetified-emoji2-1.2.0/AndroidManifest.xml:31:17-49
+170            <meta-data
+170-->[androidx.lifecycle:lifecycle-process:2.6.1] /home/runner/.gradle/caches/transforms-3/54d0af492c7aef2bb735c053b834b579/transformed/jetified-lifecycle-process-2.6.1/AndroidManifest.xml:29:13-31:52
+171                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+171-->[androidx.lifecycle:lifecycle-process:2.6.1] /home/runner/.gradle/caches/transforms-3/54d0af492c7aef2bb735c053b834b579/transformed/jetified-lifecycle-process-2.6.1/AndroidManifest.xml:30:17-78
+172                android:value="androidx.startup" />
+172-->[androidx.lifecycle:lifecycle-process:2.6.1] /home/runner/.gradle/caches/transforms-3/54d0af492c7aef2bb735c053b834b579/transformed/jetified-lifecycle-process-2.6.1/AndroidManifest.xml:31:17-49
+173            <meta-data
+173-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:29:13-31:52
+174                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+174-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:30:17-85
+175                android:value="androidx.startup" />
+175-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:31:17-49
+176        </provider>
+177
+178        <receiver
+178-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:34:9-52:20
+179            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+179-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:35:13-76
+180            android:directBootAware="false"
+180-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:36:13-44
+181            android:enabled="true"
+181-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:37:13-35
+182            android:exported="true"
+182-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:38:13-36
+183            android:permission="android.permission.DUMP" >
+183-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:39:13-57
+184            <intent-filter>
+184-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:40:13-42:29
+185                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+185-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:17-91
+185-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:41:25-88
+186            </intent-filter>
+187            <intent-filter>
+187-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:43:13-45:29
+188                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+188-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:17-85
+188-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:44:25-82
+189            </intent-filter>
+190            <intent-filter>
+190-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:46:13-48:29
+191                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+191-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:17-88
+191-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:47:25-85
+192            </intent-filter>
+193            <intent-filter>
+193-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:49:13-51:29
+194                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+194-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:17-95
+194-->[androidx.profileinstaller:profileinstaller:1.3.0] /home/runner/.gradle/caches/transforms-3/e4974d1565457fa4eab9bb90b299f5b8/transformed/jetified-profileinstaller-1.3.0/AndroidManifest.xml:50:25-92
+195            </intent-filter>
+196        </receiver>
+197    </application>
+198
+199</manifest>
