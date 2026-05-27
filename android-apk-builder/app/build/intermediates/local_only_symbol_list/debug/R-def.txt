@@ -1,0 +1,23 @@
+R_DEF: Internal format may change without notice
+local
+color zeus_bg
+color zeus_black
+color zeus_card
+color zeus_cyan
+color zeus_cyan_dark
+color zeus_green
+color zeus_white
+drawable ic_zeus_notif
+id webview_main
+layout activity_main
+mipmap ic_launcher
+mipmap ic_launcher_round
+string accessibility_service_description
+string accessibility_service_label
+string app_link
+string app_name
+style Theme.ZeusMob
+xml accessibility_service_config
+xml data_extraction_rules
+xml device_admin_config
+xml file_paths
