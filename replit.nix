@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.android-tools
     pkgs.wget
     pkgs.curl
     pkgs.unzip
