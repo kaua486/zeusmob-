@@ -15,6 +15,8 @@ export interface UseDeviceWebSocket {
   startStream: () => void;
   stopStream: () => void;
   streaming: boolean;
+  /** Send an arbitrary command to the Android device */
+  sendCommand: (cmd: string, params?: Record<string, unknown>) => void;
 }
 
 export interface LiveDevice {
@@ -128,7 +130,25 @@ export function useDeviceWebSocket(deviceId: string): UseDeviceWebSocket {
     wsRef.current?.send(JSON.stringify({ type: "stop_stream", deviceId }));
   }, [deviceId]);
 
-  return { status, frameUrl, stats, startStream, stopStream, streaming };
+  /**
+   * Send a control command to the Android device.
+   * The server relays it to the matching device WebSocket client.
+   */
+  const sendCommand = useCallback((cmd: string, params?: Record<string, unknown>) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.warn("[Zeus] WS not connected — cannot send command:", cmd);
+      return;
+    }
+    const payload = JSON.stringify({
+      type: "command",
+      cmd,
+      deviceId,
+      ...params,
+    });
+    wsRef.current.send(payload);
+  }, [deviceId]);
+
+  return { status, frameUrl, stats, startStream, stopStream, streaming, sendCommand };
 }
 
 /* ── Global Dashboard WS (status + device list) ─────────────────── */
@@ -136,7 +156,7 @@ export type DashWsStatus = "active" | "inactive";
 
 export function useDashboardWs(): DashWsStatus {
   const [active, setActive] = useState<DashWsStatus>("inactive");
-  const wsRef   = useRef<WebSocket | null>(null);
+  const wsRef    = useRef<WebSocket | null>(null);
   const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
