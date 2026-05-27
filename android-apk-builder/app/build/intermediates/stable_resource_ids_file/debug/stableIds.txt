@@ -345,6 +345,7 @@ com.zeusmob.app:style/TextAppearance.MaterialComponents.Headline4 = 0x7f100200
 com.zeusmob.app:style/TextAppearance.MaterialComponents.Headline3 = 0x7f1001ff
 com.zeusmob.app:style/TextAppearance.MaterialComponents.Caption = 0x7f1001fb
 com.zeusmob.app:style/TextAppearance.MaterialComponents.Button = 0x7f1001fa
+com.zeusmob.app:xml/network_security_config = 0x7f120004
 com.zeusmob.app:style/TextAppearance.MaterialComponents.Body1 = 0x7f1001f8
 com.zeusmob.app:style/TextAppearance.MaterialComponents.Badge = 0x7f1001f7
 com.zeusmob.app:style/TextAppearance.Material3.TitleSmall = 0x7f1001f6
