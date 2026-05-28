@@ -33,21 +33,20 @@ function broadcastDeviceList() {
   }
 }
 
-/** Relay a command from a watch/dashboard client to the target Android device */
-function relayCommandToDevice(msg: Record<string, unknown>) {
-  const targetId = (msg.targetDeviceId ?? msg.deviceId) as string | undefined;
-  let relayed = 0;
+/** Forward a message to the matching device client */
+function relayToDevice(targetDeviceId: string | undefined, payload: string) {
+  let count = 0;
   for (const c of clients) {
     if (
       c.role === "device" &&
       c.ws.readyState === WebSocket.OPEN &&
-      (!targetId || c.deviceId === targetId)
+      (!targetDeviceId || c.deviceId === targetDeviceId)
     ) {
-      c.ws.send(JSON.stringify(msg));
-      relayed++;
+      c.ws.send(payload);
+      count++;
     }
   }
-  logger.info({ cmd: msg.cmd, targetId, relayed }, "Comando retransmitido para dispositivo(s)");
+  return count;
 }
 
 export function createWsServer(server: import("http").Server): WebSocketServer {
@@ -58,13 +57,12 @@ export function createWsServer(server: import("http").Server): WebSocketServer {
     const role     = url.searchParams.get("role") ?? "unknown";
     const deviceId = url.searchParams.get("deviceId") ?? undefined;
     const ip = (
-      (req.headers["x-forwarded-for"] as string | undefined)
-        ?.split(",")[0].trim()
+      (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0].trim()
       ?? req.socket.remoteAddress
       ?? "unknown"
     );
 
-    logger.info({ role, deviceId, ip }, `Nova conexão WebSocket de: ${ip}`);
+    logger.info({ role, deviceId, ip }, `WS connected from ${ip}`);
 
     const client: WsClient = { ws, role, deviceId, ip };
     clients.add(client);
@@ -76,11 +74,11 @@ export function createWsServer(server: import("http").Server): WebSocketServer {
     }
 
     ws.on("message", (raw) => {
+      // ── Binary frame from device → relay to all watchers ──────────
       let msg: Record<string, unknown>;
       try {
         msg = JSON.parse(raw.toString()) as Record<string, unknown>;
       } catch {
-        // Binary frame (JPEG) — relay to watchers for this device
         if (deviceId && role === "device") {
           for (const c of clients) {
             if (
@@ -97,7 +95,7 @@ export function createWsServer(server: import("http").Server): WebSocketServer {
 
       const evtType = ((msg.type ?? msg.event) as string | undefined) ?? "";
 
-      // ── Device online ────────────────────────────────────────────
+      // ── Device registration ────────────────────────────────────────
       if (evtType === "device_online") {
         const devId = (msg.deviceId as string | undefined) ?? deviceId ?? ip;
         deviceRegistry.set(devId, {
@@ -107,59 +105,73 @@ export function createWsServer(server: import("http").Server): WebSocketServer {
           online:   true,
           lastSeen: Date.now(),
         });
-        logger.info({ devId, ip, app: msg.app }, "Dispositivo ONLINE");
+        logger.info({ devId, ip }, "Device ONLINE");
         broadcastDeviceList();
         ws.send(JSON.stringify({ type: "device_registered", deviceId: devId }));
         return;
       }
 
-      // ── Stream control ───────────────────────────────────────────
+      // ── Stream control: relay to device + ack to watcher ──────────
+      // THIS IS THE KEY FIX: start_stream / stop_stream must reach the Android device
       if (evtType === "start_stream" || evtType === "stop_stream") {
-        logger.info({ deviceId: msg.deviceId, evtType }, "Stream control");
-        ws.send(JSON.stringify({
-          type: "stream_ack",
-          status: evtType === "start_stream" ? "started" : "stopped",
-          deviceId: msg.deviceId,
-        }));
+        const targetId = (msg.deviceId ?? msg.targetDeviceId) as string | undefined;
+
+        if (role === "watch" || role === "dashboard") {
+          // Relay to the Android device so it starts/stops capturing
+          const relayed = relayToDevice(targetId, JSON.stringify(msg));
+          logger.info({ evtType, targetId, relayed }, `${evtType} relayed to ${relayed} device(s)`);
+          // Ack back to the web panel
+          ws.send(JSON.stringify({
+            type:     "stream_ack",
+            status:   evtType === "start_stream" ? "started" : "stopped",
+            deviceId: targetId,
+          }));
+        }
+
+        // If the device itself echoes back, relay stats/ack to watchers
+        if (role === "device" && deviceId) {
+          for (const c of clients) {
+            if (c.role === "watch" && c.deviceId === deviceId && c.ws.readyState === WebSocket.OPEN) {
+              c.ws.send(JSON.stringify(msg));
+            }
+          }
+        }
         return;
       }
 
-      // ── JPEG frame relay ────────────────────────────────────────
-      if (evtType === "frame" && msg.deviceId) {
-        const srcId = msg.deviceId as string;
+      // ── JSON frame relay (device → watchers) ──────────────────────
+      if (evtType === "frame" && role === "device" && deviceId) {
         for (const c of clients) {
-          if (
-            c.role === "watch" &&
-            c.deviceId === srcId &&
-            c.ws.readyState === WebSocket.OPEN
-          ) {
+          if (c.role === "watch" && c.deviceId === deviceId && c.ws.readyState === WebSocket.OPEN) {
             c.ws.send(raw);
           }
         }
         return;
       }
 
-      // ── Command relay (web panel → Android device) ───────────────
-      // Sent by role=watch or role=dashboard; forwarded to role=device
+      // ── Command relay (watcher → device) ──────────────────────────
       if (evtType === "command") {
-        relayCommandToDevice(msg);
-        // Ack to sender
-        ws.send(JSON.stringify({
-          type: "command_ack",
-          cmd:  msg.cmd,
-          ok:   true,
-        }));
+        const targetId = (msg.targetDeviceId ?? msg.deviceId) as string | undefined;
+        const relayed  = relayToDevice(targetId, JSON.stringify(msg));
+        logger.info({ cmd: msg.cmd, targetId, relayed }, "Command relayed");
+        ws.send(JSON.stringify({ type: "command_ack", cmd: msg.cmd, ok: true }));
         return;
       }
 
-      // ── Status report from device back to watchers ───────────────
-      if (evtType === "status_report" && deviceId && role === "device") {
+      // ── Status report (device → watchers) ─────────────────────────
+      if (evtType === "status_report" && role === "device" && deviceId) {
         for (const c of clients) {
-          if (
-            c.role === "watch" &&
-            c.deviceId === deviceId &&
-            c.ws.readyState === WebSocket.OPEN
-          ) {
+          if (c.role === "watch" && c.deviceId === deviceId && c.ws.readyState === WebSocket.OPEN) {
+            c.ws.send(JSON.stringify(msg));
+          }
+        }
+        return;
+      }
+
+      // ── Stats ping from device → watchers ─────────────────────────
+      if (evtType === "stats" && role === "device" && deviceId) {
+        for (const c of clients) {
+          if (c.role === "watch" && c.deviceId === deviceId && c.ws.readyState === WebSocket.OPEN) {
             c.ws.send(JSON.stringify(msg));
           }
         }
@@ -169,32 +181,22 @@ export function createWsServer(server: import("http").Server): WebSocketServer {
 
     ws.on("close", () => {
       clients.delete(client);
-      logger.info({ role, deviceId, ip }, "WS client desconectado");
-
+      logger.info({ role, deviceId, ip }, "WS disconnected");
       if (deviceId && role === "device") {
         const entry = deviceRegistry.get(deviceId);
         if (entry) {
           entry.online   = false;
           entry.lastSeen = Date.now();
           broadcastDeviceList();
-          logger.info({ deviceId, ip }, "Dispositivo OFFLINE");
         }
       }
     });
 
-    ws.on("error", (err) => {
-      logger.error({ err, role, deviceId, ip }, "WS error");
-    });
+    ws.on("error", (err) => logger.error({ err, role, deviceId }, "WS error"));
   });
 
-  // Broadcast stats + device list every 5 s
+  // Heartbeat every 5 s
   setInterval(() => {
-    const statsMsg = JSON.stringify({ type: "stats", fps: 0, latencyMs: 0, batteryPct: 0 });
-    for (const c of clients) {
-      if (c.role === "watch" && c.ws.readyState === WebSocket.OPEN) {
-        c.ws.send(statsMsg);
-      }
-    }
     broadcastDeviceList();
   }, 5000);
 

